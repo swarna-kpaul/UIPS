@@ -1,6 +1,8 @@
 exec(open('C:/skp/phd/UIPS/function_class.py').read())
 exec(open('C:/skp/phd/UIPS/graph_class.py').read())
 exec(open('C:/skp/phd/UIPS/environment.py').read())
+exec(open('C:/skp/phd/UIPS/graph_draw.py').read())
+exec(open('C:/skp/phd/UIPS/metasearcher.py').read())
 time_limit = 10000
 node_label = 1
 node_list_dict={}

@@ -27,6 +27,10 @@ class node:
 		self.world = None
 		self.world_version = None
 		self.data = None
+		self.probability = None
+		self.executed = 0
+		self.semantic_failed = 0
+		self.world_failed = 0
 	
 	@property
 	def links(self):
@@ -159,7 +163,6 @@ class node:
 			raise Exception ('time over')
 			
 
-	
 		
 class add(node):
 # Node object for addition function
@@ -301,8 +304,6 @@ class gaurd(node):
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
 
 
-		
-
 class equal(node):
 # Node class for divide function
 	def __init__(self,label, *links):
@@ -328,7 +329,7 @@ class equal(node):
 class greater(node):
 # Node class for divide function
 	def __init__(self,label, *links):
-		node.__init__(self,label,2,{'function':{'input':['some','some'],'output':['boolean']}},links)
+		node.__init__(self,label,2,{'function':{'input':['number','number'],'output':['boolean']}},links)
 		
 	def funct(self):
 		global node_label
@@ -350,7 +351,7 @@ class lesser(node):
 
 # Node class for divide function
 	def __init__(self,label, *links):
-		node.__init__(self,label,2,{'function':{'input':['some','some'],'output':['boolean']}},links)
+		node.__init__(self,label,2,{'function':{'input':['number','number'],'output':['boolean']}},links)
 		
 	def funct(self):
 		global node_label
@@ -488,7 +489,7 @@ class cons(node):
 		
 class nil(node):
 	def __init__(self,label,*links):
-		node.__init__(self,label,1,{'function':{'input':['none'],'output':[{'list':'none'}]}},links)
+		node.__init__(self,label,1,{'function':{'input':['any'],'output':[{'list':'null'}]}},links)
 	def funct(self):
 		super().funct()
 		if self.data == None:
@@ -522,7 +523,7 @@ class apply(node):
 
 # Node class for apply function
 	def __init__(self,label, *links):
-		node.__init__(self,label,3,{'function':{'input':[{'function':'some'},'any','any'],'output':['some']}},links)
+		node.__init__(self,label,3,{'function':{'input':[{'function':{'input':['any'],'output':['any']}},'any','any'],'output':['some']}},links)
 		
 	def funct(self):
 		global node_label
@@ -632,7 +633,7 @@ class recurse(node):
 			
 class sensor(node):
 	def __init__(self,label,out_type, *links):
-		node.__init__(self,label,1,{'function':{'input':['world'],'output':[{'pair':[out_type,'world']}]}},links)
+		node.__init__(self,label,1,{'function':{'input':['world'],'output':[out_type]}},links)
 		
 	def funct(self):
 		super().funct()
@@ -652,7 +653,7 @@ class sensor(node):
 		
 class actuator(node):
 	def __init__(self,label,in_type, *links):
-		node.__init__(self,label,1,{'function':{'input':[{'pair':[in_type,'world']}],'output':['world']}},links)
+		node.__init__(self,label,1,{'function':{'input':[in_type],'output':['world']}},links)
 		
 	def funct(self):
 		super().funct()
@@ -671,7 +672,7 @@ class actuator(node):
 		
 class goalchecker(node):
 	def __init__(self,label, *links):
-		node.__init__(self,label,1,{'function':{'input':[{'pair':['any','world']}],'output':['string']}},links)
+		node.__init__(self,label,1,{'function':{'input':['any'],'output':['string']}},links)
 		
 	def funct(self):
 		super().funct()
