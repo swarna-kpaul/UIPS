@@ -27,10 +27,11 @@ class node:
 		self.world = None
 		self.world_version = None
 		self.data = None
-		self.probability = None
+		self.probability = []
 		self.executed = 0
 		self.semantic_failed = 0
 		self.world_failed = 0
+		self.child_node_init_probability = None
 	
 	@property
 	def links(self):
