@@ -3,15 +3,20 @@
 #global node_label
 time_limit = 1
 node_label = 1
+#all_node_dict = {}
 class null:
 	def __init__(self):
 		self.name=None
 		
 null=null()
 
+class time_exception(Exception):
+	pass
+
 class node:
 	def __init__(self,label,no_of_arguments,atype, inlinks):
 		global node_label
+		#global all_node_dict
 		#index = 0
 		#for link in links:
 		#	if link.output_type != input_type[index]:
@@ -32,6 +37,7 @@ class node:
 		self.semantic_failed = 0
 		self.world_failed = 0
 		self.child_node_init_probability = None
+		#all_node_dict[label] = self
 	
 	@property
 	def links(self):
@@ -161,7 +167,7 @@ class node:
 		global time_limit
 		time_limit = time_limit - 1
 		if time_limit < 1:
-			raise Exception ('time over')
+			raise time_exception ('time over')
 			
 
 		
@@ -592,11 +598,11 @@ class recurse(node):
 		
 		
 	def funct(self):
-		global node_list_dict
 		global node_label
 		super().funct()
+		node_list_dict ={}
 		if self.data == None:
-			g = Graph(graph_label)
+			self.g = Graph(graph_label)
 			node_list_dict[7] = identity(node_label) #7
 			node_list_dict[6] = identity(node_label) #6
 			node_list_dict[5] = identity(node_label)	#5
@@ -604,30 +610,30 @@ class recurse(node):
 			node_list_dict[3] = apply(node_label)	#3
 			node_list_dict[2] = gaurd(node_label)	#2
 			node_list_dict[1] = recurse(node_label)	#1
-			g.add_node(node_list_dict[7])
-			g.add_node(node_list_dict[6])
-			g.add_node(node_list_dict[5])
-			g.add_node(node_list_dict[4],node_list_dict[6],node_list_dict[5],node_list_dict[5])
-			g.add_node(node_list_dict[3],node_list_dict[7],node_list_dict[5],node_list_dict[5])
-			g.add_node(node_list_dict[1],node_list_dict[7],node_list_dict[6],node_list_dict[3])
-			g.add_node(node_list_dict[2],node_list_dict[4],node_list_dict[5],node_list_dict[1])
-		#g = g.return_subgraph(node_list_dict[2])
-			g.glinks = self.links
-			self.g = g
+			self.g.add_node(node_list_dict[7])
+			self.g.add_node(node_list_dict[6])
+			self.g.add_node(node_list_dict[5])
+			self.g.add_node(node_list_dict[4],node_list_dict[6],node_list_dict[5],node_list_dict[5])
+			self.g.add_node(node_list_dict[3],node_list_dict[7],node_list_dict[5],node_list_dict[5])
+			self.g.add_node(node_list_dict[1],node_list_dict[7],node_list_dict[6],node_list_dict[3])
+			self.g.add_node(node_list_dict[2],node_list_dict[4],node_list_dict[5],node_list_dict[1])
+			self.g.glinks = self.links
 		#print(self.links)
 			for i in range(len(self.links)): 
 			#print(i)
 			#print(g.initialnodes[i])
 			#print(self.links[i])
-				g.initialnodes[i].links = (self.links[i],)
-			self.g = g
+				self.g.initialnodes[i].links = (self.links[i],)
 			#print(self.g.nodes[2].funct())
 			#print(self.g.nodes[4].funct())
 			#print(self.g.nodes[3].funct())
-			output = g.terminalnodes[0].funct()
+			output = self.g.terminalnodes[0].funct()
 			self.data = output['data']
 			#print(self.data)
 			self.world = output['world']
+			# cleanup memory
+			del(node_list_dict)
+			del(output)
 			self.world_version = self.world.version
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
 			
@@ -668,6 +674,7 @@ class actuator(node):
 				raise Exception("Invalid sequence of actuator")
 			self.data = null
 			self.world = temp_world
+			# Cleanup memory
 			self.world_version = self.world.version
 		return {'world':self.world}
 		

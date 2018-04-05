@@ -9,27 +9,27 @@ node_list_dict={}
 
 
 
-id1=identity(node_label)
-add1=add(node_label,id1,id1)
-g2=Graph(graph_label)
-g2.add_node(id1)
-g2.add_node(add1,id1,id1)
-g2 = g2.return_subgraph(add1)
+# id1=identity(node_label)
+# add1=add(node_label,id1,id1)
+# g2=Graph(graph_label)
+# g2.add_node(id1)
+# g2.add_node(add1,id1,id1)
+# g2 = g2.return_subgraph(add1)
 
-g3=Graph(graph_label)
-g3.add_node(identity(node_label))
-g3.add_node(constant(node_label,5),g3.terminalnodes[0])
-g3.add_node(greater(node_label),g3.initialnodes[0],g3.terminalnodes[0])
-g3 = g3.return_subgraph(g3.terminalnodes[0])
+# g3=Graph(graph_label)
+# g3.add_node(identity(node_label))
+# g3.add_node(constant(node_label,5),g3.terminalnodes[0])
+# g3.add_node(greater(node_label),g3.initialnodes[0],g3.terminalnodes[0])
+# g3 = g3.return_subgraph(g3.terminalnodes[0])
 
-k4=constant(node_label,g2,init_world)
-k5=constant(node_label,g3,init_world)
-r1=recurse(node_label,k4,k5,constant(node_label,1,init_world))
+# k4=constant(node_label,g2,init_world)
+# k5=constant(node_label,g3,init_world)
+# r1=recurse(node_label,k4,k5,constant(node_label,1,init_world))
 
-ap=apply(node_label,k5,constant(node_label,1,init_world))
+# ap=apply(node_label,k5,constant(node_label,1,init_world))
 
-ap=apply(node_label,k4,constant(node_label,3,init_world),constant(node_label,1,init_world))
-#ap.funct()
+# ap=apply(node_label,k4,constant(node_label,3,init_world),constant(node_label,1,init_world))
+# #ap.funct()
 
 
 ###### Maze program

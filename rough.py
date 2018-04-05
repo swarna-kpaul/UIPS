@@ -10,3 +10,9 @@ exec(open('C:/skp/phd/UIPS/main.py').read())
 exec(open('C:/skp/phd/UIPS/type_class.py').read())
 
 exec(open('C:/skp/phd/UIPS/environment.py').read())
+
+
+A=locals()
+diffA = A
+B=locals()
+all(map( diffA.pop, B))

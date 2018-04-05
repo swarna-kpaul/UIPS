@@ -1,3 +1,7 @@
+class world_exception(Exception):
+	pass
+
+
 class world:
 	
 	def __init__(self,out_data_type,init_world,init_state,goal_state):
@@ -18,7 +22,7 @@ class world:
 		try: 
 			self.state = self.world_funct(self.state,action)
 		except:
-			raise Exception('invalid action')
+			raise world_exception('invalid action')
 	
 	def funct(self):
 		return {'world':self}
@@ -88,15 +92,15 @@ def maze(*args):
 			current_state[0] = current_state[0] - current_direction[0]
 			current_state[1] = current_state[1] - current_direction[1]
 		else:
-			raise Exception('invalid action in maze')
+			raise world_exception('invalid action')
 		
 		if maze_def[current_state[0]][current_state[1]] == 1:
-			raise Exception('dead end in maze')
+			raise world_exception('invalid action')
 		else :
 			return [current_state[0],current_state[1],current_direction]
 		
 	else:
-		raise Exception("invalid number of arguments for maze function")
+		raise world_exception("invalid number of arguments for maze function")
 	
 	
 init_world = world('number',maze,init_state,goal_state)

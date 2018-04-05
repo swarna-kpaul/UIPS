@@ -1,4 +1,3 @@
-"C:/Program Files/R/R-3.3.2/bin/Rscript"
 library(visNetwork)
 library(igraph)
 edges<-read.csv('C:/skp/phd/UIPS/edge_list.csv')
