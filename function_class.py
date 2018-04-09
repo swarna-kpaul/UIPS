@@ -32,12 +32,34 @@ class node:
 		self.world = None
 		self.world_version = None
 		self.data = None
-		self.probability = []
+		#self.probability = []
 		self.executed = 0
 		self.semantic_failed = 0
 		self.world_failed = 0
+		self.time_failed = 0
 		self.child_node_init_probability = None
+		self.program_probability = None
+		self.factored_program_probability = dict()
 		#all_node_dict[label] = self
+	
+	def update_type(self):
+			# if isinstance(self,true) or isinstance(self,false):
+				# print('ok')
+				# self.atype['function']['input'] = [self.links[0].atype['function']['output'][0],self.links[1].atype['function']['output'][0]]
+				# self.atype['function']['output'] = self.links[0].atype['function']['output']
+		if type(self).__name__=='head':
+			self.atype['function']['input'] = self.links[0].atype['function']['output']
+			self.atype['function']['output'][0] = self.links[0].atype['function']['output'][0]['list']
+		elif type(self).__name__=='tail':
+			self.atype['function']['input'] = self.links[0].atype['function']['output']
+			self.atype['function']['output'] = self.links[0].atype['function']['output']
+		elif type(self).__name__=='cons':
+			self.atype['function']['input'] = [self.links[0].atype['function']['output'][0],self.links[1].atype['function']['output'][0]]
+			self.atype['function']['output'][0] = {'list':self.links[1].atype['function']['output'][0]}
+		elif type(self).__name__=='identity':
+			self.atype['function']['input'] = self.links[0].atype['function']['output']
+			self.atype['function']['output'] = self.links[0].atype['function']['output']
+	
 	
 	@property
 	def links(self):
@@ -48,53 +70,53 @@ class node:
 		#if len(links) <= self.no_of_arguments:
 		#print('test link')
 		########## Type checking
-		def generic_type_check(self):
-			input_atype=self.atype
-			#print (inlinks)
-			#print(input_atype)
-			try:
-				for i in range(min(self.no_of_arguments,len(inlinks))):
-					node_input_type = input_atype['function']['input'][i]
-					link_out_atype = inlinks[i].atype['function']['output'][0]
-					#print(i)
-					#print (link_out_atype)
-					#print (node_input_type)
-					if isinstance(node_input_type,dict) :
-		# function or list type
-						if isinstance(link_out_atype,dict):
-							if 'function' in node_input_type and 'function' in link_out_atype:
-								valid = 'ok'
-							elif 'list' in node_input_type and 'list' in link_out_atype:
-								if node_input_type['list'] == link_out_atype['list'] or link_out_atype['list'] == 'none' or node_input_type['list'] == 'some':
-									valid = 'ok'
-								else:
-									raise Exception('Type Mismatch')
-							else:
-								raise Exception('Type Mismatch')
-						elif link_out_atype == 'some':
-							valid = 'ok'
-							## Update some link
-							#print('ok')
-							# inlinks[i].atype['function']['output'][0] = input_atype['function']['input'][i]
-							# for j in range(len(inlinks[i].atype['function']['input'])):
-								# if inlinks[i].atype['function']['input'][j] == 'some':
-									# inlinks[i].atype['function']['input'][j] = input_atype['function']['input'][i]
-						else:
-							raise Exception('Type Mismatch')
-					elif node_input_type == 'any':
-						valid = 'ok'
-					elif node_input_type == 'some':
-						valid = 'ok'
-					elif link_out_atype == 'some':
-						valid = 'ok'
-						# inlinks[i].atype['function']['output'][0] = input_atype['function']['input'][i]
-						# for j in range(len(inlinks[i].atype['function']['input'])):
-							# if inlinks[i].atype['function']['input'][j] == 'some':
-								# inlinks[i].atype['function']['input'][j] = input_atype['function']['input'][i]
-					elif not isinstance(link_out_atype,dict) and (link_out_atype == node_input_type ) :
-						valid = 'ok'
-					else:
-						raise Exception('Type Mismatch')
+		# def generic_type_check(self):
+			# input_atype=self.atype
+			# #print (inlinks)
+			# #print(input_atype)
+			# try:
+				# for i in range(min(self.no_of_arguments,len(inlinks))):
+					# node_input_type = input_atype['function']['input'][i]
+					# link_out_atype = inlinks[i].atype['function']['output'][0]
+					# #print(i)
+					# #print (link_out_atype)
+					# #print (node_input_type)
+					# if isinstance(node_input_type,dict) :
+		# # function or list type
+						# if isinstance(link_out_atype,dict):
+							# if 'function' in node_input_type and 'function' in link_out_atype:
+								# valid = 'ok'
+							# elif 'list' in node_input_type and 'list' in link_out_atype:
+								# if node_input_type['list'] == link_out_atype['list'] or link_out_atype['list'] == 'none' or node_input_type['list'] == 'some':
+									# valid = 'ok'
+								# else:
+									# raise Exception('Type Mismatch')
+							# else:
+								# raise Exception('Type Mismatch')
+						# elif link_out_atype == 'some':
+							# valid = 'ok'
+							# ## Update some link
+							# #print('ok')
+							# # inlinks[i].atype['function']['output'][0] = input_atype['function']['input'][i]
+							# # for j in range(len(inlinks[i].atype['function']['input'])):
+								# # if inlinks[i].atype['function']['input'][j] == 'some':
+									# # inlinks[i].atype['function']['input'][j] = input_atype['function']['input'][i]
+						# else:
+							# raise Exception('Type Mismatch')
+					# elif node_input_type == 'any':
+						# valid = 'ok'
+					# elif node_input_type == 'some':
+						# valid = 'ok'
+					# elif link_out_atype == 'some':
+						# valid = 'ok'
+						# # inlinks[i].atype['function']['output'][0] = input_atype['function']['input'][i]
+						# # for j in range(len(inlinks[i].atype['function']['input'])):
+							# # if inlinks[i].atype['function']['input'][j] == 'some':
+								# # inlinks[i].atype['function']['input'][j] = input_atype['function']['input'][i]
+					# elif not isinstance(link_out_atype,dict) and (link_out_atype == node_input_type ) :
+						# valid = 'ok'
+					# else:
+						# raise Exception('Type Mismatch')
 						
 				# node_input_type = input_atype['function']['input']
 				# temp_set = []
@@ -134,33 +156,14 @@ class node:
 							# raise Exception('Type Mismatch')
 						# else:
 							# return valid
-			except:
-				print('Type Mismatch')
-				raise
-		
-		def update_type(self):
-			# if isinstance(self,true) or isinstance(self,false):
-				# print('ok')
-				# self.atype['function']['input'] = [self.links[0].atype['function']['output'][0],self.links[1].atype['function']['output'][0]]
-				# self.atype['function']['output'] = self.links[0].atype['function']['output']
-			if isinstance(self,head):
-				self.atype['function']['input'] = self.links[0].atype['function']['output']
-				self.atype['function']['output'][0] = self.links[0].atype['function']['output'][0]['list']
-			elif isinstance(self,tail):
-				self.atype['function']['input'] = self.links[0].atype['function']['output']
-				self.atype['function']['output'] = self.links[0].atype['function']['output']
-			elif isinstance(self,cons):
-				self.atype['function']['input'] = [self.links[0].atype['function']['output'][0],self.links[1].atype['function']['output'][0]]
-				self.atype['function']['output'][0] = {'list':self.links[1].atype['function']['output'][0]}
-			elif isinstance(self,identity):
-				self.atype['function']['input'] = self.links[0].atype['function']['output']
-				self.atype['function']['output'] = self.links[0].atype['function']['output']
-			
+			# except:
+				# print('Type Mismatch')
+				# raise
 		
 		#generic_type_check(self)
 		self.__links = inlinks
-		if self.no_of_arguments <= len(inlinks):
-			update_type(self)
+		#if self.no_of_arguments <= len(inlinks):
+		#	update_type(self)
 		
 		
 	def funct(self):

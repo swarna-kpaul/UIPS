@@ -1,6 +1,7 @@
 import copy
 from operator import itemgetter
 graph_label = 1
+from functools import reduce
 class Graph:
 	def __init__(self,label):
 		global graph_label
@@ -19,17 +20,16 @@ class Graph:
 			self.atype['function']['input'] += innode.atype['function']['input']
 		else:
 			# check innode type
-			if not isinstance(innode,node):
-				raise Exception('invalid input node type')
+			#if not isinstance(innode,node):
+			#	raise Exception('invalid input node type')
 			# check no. of links
-			if len(links) != innode.no_of_arguments:
-				raise Exception('invalid number of input links for input node')
+			#if len(links) != innode.no_of_arguments:
+			#	raise Exception('invalid number of input links for input node')
 			# check link node in graph
-			for item in links:
-				#print(item)
-				if not item in self.nodes:
-					raise Exception ('links not in graph')
-
+			# for item in links:
+				# #print(item)
+				# if not item in self.nodes:
+					# raise Exception ('links not in graph')
 			innode.links = links
 			# Remove non terminal nodes
 			for item in links:
@@ -41,12 +41,20 @@ class Graph:
 				
 		self.terminalnodes.append(innode)
 		self.nodes.append(innode)
+		
+	def cleanup_terminalnodes(self,terminalnode_indices):
+		for item in sorted(terminalnode_indices,reverse=True):
+			self.terminalnodes.pop(item)
+		
 	
 	def return_subgraph(self, _terminalnode):
 		global graph_label
+		global C
 		#global node_label
 		temp_g = Graph(graph_label)
 		temp_g.terminalnodes = [_terminalnode]
+		#nodes_probability={}
+		#nodes_probability[str(_terminalnode)] = _terminalnode.probability
 		
 		def graph_return_nodes(self,temp_g,terminalnode):
 
@@ -54,7 +62,7 @@ class Graph:
 		# Recursively fetch all parent nodes
 			for i,sourcenode in enumerate(terminalnode.links):
 				#print (sourcenode)
-				if isinstance(sourcenode,world): ### terminalnode initialnode
+				if type(sourcenode).__name__=='world': ### terminalnode initialnode
 					temp_g.initialnodes.append(terminalnode)
 				elif len(sourcenode.links) == 0 and sourcenode.no_of_arguments >0: ######### sourcenode initialnode
 					temp_g.initialnodes.append(sourcenode)
@@ -65,17 +73,28 @@ class Graph:
 			#print(linknodes)
 			#print(terminalnode)
 			temp_g.nodes.append(terminalnode)
+			#nodes_probability[str(terminalnode)] = terminalnode.probability
+			return temp_g
+			#nodes_probability_list.append((terminalnode,terminalnode.probability))
 			#print(linknodes)
 			#return terminalnode
 		
-		graph_return_nodes(self,temp_g,_terminalnode)
+		temp_g = graph_return_nodes(self,temp_g,_terminalnode)
 		temp_g.initialnodes = list(set(temp_g.initialnodes))
+		#nodes_probability_list = list(set(nodes_probability_list))
+		#tot_probability = 1
+		#for j_node,j_node_probability in nodes_probability.items():
+		#	tot_probability *= reduce(lambda x, y: x*y,j_node_probability)
+		#del nodes_probability
+		#if tot_probability*PHASE/C <1:
+		#	return (None,tot_probability)
 		temp_g.nodes = list(set(temp_g.nodes))
 		temp_node_label=[]
-		for tempnode in temp_g.initialnodes:
-			temp_node_label.append(tempnode.label)
-		sorted_node_label_idx = sorted(range(len(temp_node_label)),key=temp_node_label.__getitem__)
-		temp_g.initialnodes =[temp_g.initialnodes[j] for j in sorted_node_label_idx]
+		if len(temp_g.initialnodes) >1:
+			for tempnode in temp_g.initialnodes:
+				temp_node_label.append(tempnode.label)
+			sorted_node_label_idx = sorted(range(len(temp_node_label)),key=temp_node_label.__getitem__)
+			temp_g.initialnodes =[temp_g.initialnodes[j] for j in sorted_node_label_idx]
 		temp_g = copy.deepcopy(temp_g)
 		for i in temp_g.nodes:
 			i.world = None

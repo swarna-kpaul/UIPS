@@ -35,8 +35,11 @@ def draw_graph(g_obj):
 		spamwriter.writerow(['from','to','label'])
 		for edge in edge_list:
 			spamwriter.writerow(edge)
-	subprocess.call ("C:/Program Files/R/R-3.3.2/bin/Rscript C:/skp/phd/UIPS/graph_view.r", shell =True)
-	subprocess.call ("C:/skp/phd/UIPS/graph_view.html", shell =True)
+	#try:
+	#	subprocess.check_call (["C:/Program Files/R/R-3.3.2/bin/Rscript","C:/skp/phd/UIPS/graph_view.r"], shell =True)
+	#except CalledProcessError as e:
+	#	print(e.message)
+	#subprocess.call ("C:/skp/phd/UIPS/graph_view.html", shell =True)
 	return edge_list
 
 	

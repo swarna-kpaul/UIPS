@@ -7,7 +7,7 @@ sys.path.insert(0, 'C:/skp/phd/UIPS/')
 import copy
 exec(open('C:/skp/phd/UIPS/main.py').read())
 
-exec(open('C:/skp/phd/UIPS/type_class.py').read())
+exec(open('C:/skp/phd/UIPS/type_class.py').read())_
 
 exec(open('C:/skp/phd/UIPS/environment.py').read())
 
