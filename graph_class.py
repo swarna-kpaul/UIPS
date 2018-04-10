@@ -50,11 +50,13 @@ class Graph:
 	def return_subgraph(self, _terminalnode):
 		global graph_label
 		global C
+		global init_world
 		#global node_label
 		temp_g = Graph(graph_label)
 		temp_g.terminalnodes = [_terminalnode]
 		#nodes_probability={}
 		#nodes_probability[str(_terminalnode)] = _terminalnode.probability
+		new_init_world = copy.deepcopy(init_world)
 		
 		def graph_return_nodes(self,temp_g,terminalnode):
 
@@ -64,6 +66,7 @@ class Graph:
 				#print (sourcenode)
 				if type(sourcenode).__name__=='world': ### terminalnode initialnode
 					temp_g.initialnodes.append(terminalnode)
+					
 				elif len(sourcenode.links) == 0 and sourcenode.no_of_arguments >0: ######### sourcenode initialnode
 					temp_g.initialnodes.append(sourcenode)
 					graph_return_nodes(self,temp_g,sourcenode)
@@ -81,13 +84,7 @@ class Graph:
 		
 		temp_g = graph_return_nodes(self,temp_g,_terminalnode)
 		temp_g.initialnodes = list(set(temp_g.initialnodes))
-		#nodes_probability_list = list(set(nodes_probability_list))
-		#tot_probability = 1
-		#for j_node,j_node_probability in nodes_probability.items():
-		#	tot_probability *= reduce(lambda x, y: x*y,j_node_probability)
-		#del nodes_probability
-		#if tot_probability*PHASE/C <1:
-		#	return (None,tot_probability)
+
 		temp_g.nodes = list(set(temp_g.nodes))
 		temp_node_label=[]
 		if len(temp_g.initialnodes) >1:
@@ -96,6 +93,15 @@ class Graph:
 			sorted_node_label_idx = sorted(range(len(temp_node_label)),key=temp_node_label.__getitem__)
 			temp_g.initialnodes =[temp_g.initialnodes[j] for j in sorted_node_label_idx]
 		temp_g = copy.deepcopy(temp_g)
+		
+		#### set a copy of init world for initial nodes
+		for initnode in temp_g.initialnodes:
+			initnode_link_list = list(initnode.links)
+			for i,sourcenode in enumerate(initnode.links):
+				if type(sourcenode).__name__=='world': 
+					initnode_link_list[i]=new_init_world
+			initnode.links = tuple(initnode_link_list)
+					
 		for i in temp_g.nodes:
 			i.world = None
 			i.data = None

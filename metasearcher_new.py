@@ -1,5 +1,6 @@
 import itertools
 from collections import defaultdict
+import gc
 add_obj = add(node_label)
 corpus_of_all_objects = {'sensor_number':'sensor(node_label,\'number\')',
 					'actuator_number':'actuator(node_label,\'number\')',
@@ -29,8 +30,8 @@ existing_programs = dict()
 C = 0.02
 					
 #corpus_index = ['sensor_number','actuator_number','identity','constant0','constant1','constant2','constant3','gaurd','equal','lambdagraph','recurse']
-#corpus_index = ['sensor_number','actuator_number','equal','gaurd','lambdagraph','recurse','constant1']
-corpus_index = ['sensor_number','actuator_number','equal','constant1']
+corpus_index = ['sensor_number','actuator_number','equal','gaurd','lambdagraph','recurse','constant1']
+#corpus_index = ['sensor_number','actuator_number','equal','constant1']
 
 
 def check_type_compatibility(source_node,target_node,target_node_link):
@@ -191,18 +192,13 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 	global node_label
 	global existing_programs
 	global already_checked_pairs
-	if PHASE not in already_checked_pairs:
-		already_checked_pairs = dict()
-		already_checked_pairs[PHASE] = []
+	#if PHASE not in already_checked_pairs:
+	#	already_checked_pairs = dict()
+	#	already_checked_pairs[PHASE] = []
 	added_node_flag = 0
 	########## For no dependency on order of links prune keep only distinct combinations of parent nodes
 	if child_node_name in ['equal','add','disjunct','conjunct','multiply']:
-		par_node_combi_temp =defaultdict(list)
-		#print(par_node_list_tuple)
-		for x in itertools.product(*par_node_list_tuple,repeat=1):
-			xlabel = [node.label for node in x]
-			par_node_combi_temp[tuple(str(sorted(xlabel)))].append(x)
-		par_node_combi = [x[0] for x in par_node_combi_temp.values()]
+		par_node_combi = itertools.combinations_with_replacement(par_node_list_tuple[0],child_node.no_of_arguments)
 	else:
 		par_node_combi = itertools.product(*par_node_list_tuple,repeat=1)
 			
@@ -213,13 +209,13 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 		if is_exist_program == 1: ##### Program already exist
 			continue
 		########## Check if pair is already checked
-		if [node.label for node in parent_nodes] in already_checked_pairs[PHASE]:
-			continue
+		#if [node.label for node in parent_nodes] in already_checked_pairs[PHASE]:
+		#	continue
 		
 		# check of the child node satisfies probability*PHASE>1 criteria
 		program_probability,merged_factored_program_probability  = check_program_probability_criteria(parent_nodes)
 		if program_probability*PHASE < 1: ####### if probability criteria not satisfied
-			already_checked_pairs[PHASE].append([node.label for node in parent_nodes])
+		#	already_checked_pairs[PHASE].append([node.label for node in parent_nodes])
 			continue
 					
 		############## add child node
@@ -237,7 +233,8 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 				
 		######### execute newly added node 
 		output = evaluate_a_graph(search_graph,child_node,PHASE)
-		if output == 'goal reached':
+		if output == 'Goal Reached':
+			print(output)
 			return(child_node,added_node_flag)
 			
 	return(None,added_node_flag)
@@ -274,7 +271,7 @@ def execute_graph(search_graph,PHASE):
 	for executable_node in gen1:
 		#print(executable_node)
 		output=evaluate_a_graph(search_graph,executable_node,PHASE)
-		if output == 'goal reached':
+		if output == 'Goal Reached':
 			executed = 1
 			return (executable_node,executed)
 		elif output != None:
@@ -298,6 +295,9 @@ def metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_typ
 		child_node,executed=execute_graph(search_graph,PHASE)
 		if child_node != None:
 			return child_node
+			
+		if executed ==1:
+			print('time_executed')
 		while True:
 			# extend and execute nodes in graph
 			child_node,added_node_flag = extend_execute_graph(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,PHASE) 
@@ -323,4 +323,4 @@ initialinput.child_node_init_probability = init_type_compatible_node_links[corpu
 search_graph = Graph(graph_label)
 search_graph.add_node(initialinput)
 existing_programs = dict()
-#cProfile.run('exec_node = metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,20000)')
+#cProfile.run('exec_node = metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,5000)')

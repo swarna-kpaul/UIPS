@@ -2,7 +2,7 @@ import csv
 import subprocess
 
 def draw_graph(g_obj):
-	terminalnode = g_obj.terminalnodes[0]
+	#terminalnode = g_obj.terminalnodes[0]
 	
 	edge_list =[]
 	def return_edge_list(g_obj,terminalnode, edge_list):
@@ -28,7 +28,8 @@ def draw_graph(g_obj):
 			edge_list.append([s_node,t_node,i+1])	
 		return edge_list
 		
-	edge_list = return_edge_list(g_obj,terminalnode, edge_list)
+	for terminalnode in g_obj.terminalnodes:
+		edge_list = return_edge_list(g_obj,terminalnode, edge_list)
 	
 	with open('C:/skp/phd/UIPS/edge_list.csv', 'w', newline='') as csvfile:
 		spamwriter = csv.writer(csvfile)
