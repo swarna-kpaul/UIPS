@@ -35,7 +35,7 @@ class world:
 		
 		
 init_state = [1,1,[1,0]]
-goal_state = [5,1]
+goal_state = [20,20]
 
 def maze(*args):
 	w, h = 22, 22;

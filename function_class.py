@@ -32,7 +32,6 @@ class node:
 		self.world = None
 		self.world_version = None
 		self.data = None
-		#self.probability = []
 		self.executed = 0
 		self.semantic_failed = 0
 		self.world_failed = 0
@@ -40,7 +39,7 @@ class node:
 		self.child_node_init_probability = None
 		self.program_probability = None
 		self.factored_program_probability = dict()
-		#all_node_dict[label] = self
+		self.program_expression =None
 	
 	def update_type(self):
 			# if isinstance(self,true) or isinstance(self,false):
