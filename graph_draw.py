@@ -1,4 +1,4 @@
-import csv
+import csv;
 import subprocess
 
 def draw_graph(g_obj):
@@ -31,17 +31,31 @@ def draw_graph(g_obj):
 	for terminalnode in g_obj.terminalnodes:
 		edge_list = return_edge_list(g_obj,terminalnode, edge_list)
 	
+	node_list=[['initworld','']]
+	for node_i in g_obj.nodes:
+		n_node = type(node_i).__name__ + str(node_i.label)
+		if (type(node_i).__name__ == 'constant'):
+			n_node = str(node_i.K) + '.' + n_node
+		
+		node_list.append([n_node,node_i.program_expression])
+	
 	with open('C:/skp/phd/UIPS/edge_list.csv', 'w', newline='') as csvfile:
 		spamwriter = csv.writer(csvfile)
 		spamwriter.writerow(['from','to','label'])
 		for edge in edge_list:
 			spamwriter.writerow(edge)
+	
+	with open('C:/skp/phd/UIPS/node_list.csv', 'w', newline='') as csvfile:
+		spamwriter = csv.writer(csvfile)
+		spamwriter.writerow(['id','title'])
+		for node in node_list:
+			spamwriter.writerow(node)
 	#try:
 	#	subprocess.check_call (["C:/Program Files/R/R-3.3.2/bin/Rscript","C:/skp/phd/UIPS/graph_view.r"], shell =True)
 	#except CalledProcessError as e:
 	#	print(e.message)
 	#subprocess.call ("C:/skp/phd/UIPS/graph_view.html", shell =True)
-	return edge_list
+	#return edge_list
 
 	
 	

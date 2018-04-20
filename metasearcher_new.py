@@ -83,7 +83,13 @@ def initialize_corpus(corpus_index):
 		type_compatible_node_links = create_type_compatibility(type_compatible_node_links,i_node,eval(corpus_of_objects[i_node]),corpus_of_objects,corpus_index)
 		
 	return 	(corpus_of_objects,type_compatible_node_links)
-	
+
+
+def check_equivalent_program(search_graph,executable_node):
+	for i_node in search_graph.nodes:
+		if str(executable_node.program_expression['data']) == str(i_node.program_expression['data']) and str(executable_node.program_expression['world']) == str(i_node.program_expression['world']) and executable_node != i_node:
+			executable_node.equivalent_prog =i_node.label
+			break
 
 def evaluate_a_graph(search_graph,executable_node,PHASE):
 	global node_label
@@ -97,6 +103,7 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 	#	if PHASE*executable_node.program_probability/C<1:
 	#		return output
 	current_program_graph= search_graph.return_subgraph(executable_node)
+	new_term_node = current_program_graph.terminalnodes[0]
 	probability = executable_node.program_probability
 	time_limit = PHASE*probability/C
 	if PHASE*probability/C <1:
@@ -111,7 +118,9 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 		output = current_program_graph.eval_graph()
 		#print('executed')
 		executed = 1
+		executable_node.program_expression = copy.deepcopy(new_term_node.program_expression)
 		executable_node.executed = 1
+		check_equivalent_program(search_graph,executable_node)
 	except world_exception: #### Invalid world action
 		#print('world failed')
 		executable_node.world_failed = 1
@@ -251,7 +260,7 @@ def extend_execute_graph(search_graph,corpus_index,corpus_of_objects,type_compat
 		### Create list of extendable parent nodes
 		gen = [extendable_nodes for extendable_nodes_index,extendable_nodes in enumerate(copy.copy(search_graph.nodes)) 
 			if  extendable_nodes.executed == 1 and extendable_nodes.semantic_failed == 0 
-			and extendable_nodes.world_failed == 0 
+			and extendable_nodes.world_failed == 0 and extendable_nodes.equivalent_prog == 0
 			and extendable_nodes.program_probability*extendable_nodes.child_node_init_probability*PHASE>1] ## all graph nodes those are executed and not failed and total probability*PHASE >1
 		
 		## Create type compatible parent node list for each links of child node
@@ -320,7 +329,9 @@ initialinput.executed = 1
 initialinput.program_probability =1
 initialinput.factored_program_probability['0-'+str(initialinput.label)] = 1
 initialinput.child_node_init_probability = init_type_compatible_node_links[corpus_index[0]][0]['init_probability']
+initialinput.program_expression = {'data':symbols('iW().iS()'),'world':'iW().iS()'}
 search_graph = Graph(graph_label)
 search_graph.add_node(initialinput)
 existing_programs = dict()
 #cProfile.run('exec_node = metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,5000)')
+exec_node = metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,100)
