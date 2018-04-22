@@ -29,13 +29,13 @@ class world:
 		
 	def check_goal_state(self):
 		if self.goal_state == self.state[0:len(self.goal_state)]:
-			return ("Goal Reached")
+			return True
 		else:
-			return ("Goal not Reached")
+			return False
 		
 		
 init_state = [1,1,[1,0]]
-goal_state = [2,1]
+goal_state = [1,20]
 
 def maze(*args):
 	w, h = 22, 22;

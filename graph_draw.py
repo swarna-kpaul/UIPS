@@ -19,6 +19,7 @@ def draw_graph(g_obj):
 			else:
 				s_node = type(sourcenode).__name__ + str(sourcenode.label)
 				t_node = type(terminalnode).__name__ + str(terminalnode.label)
+				#print(t_node)
 				edge_list = return_edge_list(g_obj,sourcenode,edge_list)
 			
 			if (type(sourcenode).__name__ == 'constant'):
@@ -31,19 +32,23 @@ def draw_graph(g_obj):
 	for terminalnode in g_obj.terminalnodes:
 		edge_list = return_edge_list(g_obj,terminalnode, edge_list)
 	
+	#print(edge_list)
 	node_list=[['initworld','']]
+	node_names = ['initworld']
 	for node_i in g_obj.nodes:
 		n_node = type(node_i).__name__ + str(node_i.label)
 		if (type(node_i).__name__ == 'constant'):
 			n_node = str(node_i.K) + '.' + n_node
-		
-		node_list.append([n_node,node_i.program_expression])
-	
+		if node_i.executed in (0,1): #and node_i.equivalent_prog == 0:
+			node_list.append([n_node,node_i.program_expression])
+			node_names.append(n_node)
+	#print(node_list)
 	with open('C:/skp/phd/UIPS/edge_list.csv', 'w', newline='') as csvfile:
 		spamwriter = csv.writer(csvfile)
 		spamwriter.writerow(['from','to','label'])
 		for edge in edge_list:
-			spamwriter.writerow(edge)
+			if edge[0] in node_names and edge[1] in node_names:
+				spamwriter.writerow(edge)
 	
 	with open('C:/skp/phd/UIPS/node_list.csv', 'w', newline='') as csvfile:
 		spamwriter = csv.writer(csvfile)

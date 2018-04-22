@@ -165,11 +165,12 @@ class node:
 	def update_program_expression(self,node_name,node_output):
 		if self.update_exp == 1:
 			current_expression = get_program_expression(node_name,self,node_output)
-			if current_expression['data'] == True:
+			if str(current_expression['data']) == 'True' :
 				current_expression['data'] = True
-			elif current_expression['data'] == False:
+			elif str(current_expression['data']) == 'False':
 				current_expression['data'] = False
 			self.program_expression = current_expression
+			#print(current_expression)
 
 		
 class add(node):
@@ -305,6 +306,8 @@ class gaurd(node):
 		#print(self.links[0])
 		if self.data == None:
 			link1_in = self.links[0].funct()
+			if str(link1_in['data']) not in ('True','False'):
+				raise Exception('Invalid input type for gaurd')
 			if link1_in['data'] == True:
 				link2_in = self.links[1].funct()
 				self.data =  link2_in['data']
@@ -680,7 +683,7 @@ class sensor(node):
 			self.world = temp_world
 			self.world_version = self.world.version
 			super().update_program_expression('sensor',self.data)
-		return {'data':copy.deepcopy(self.data),'world':self.world}
+		return {'data':copy.copy(self.data),'world':self.world}
 		
 class actuator(node):
 	def __init__(self,label,in_type, *links):
@@ -705,13 +708,22 @@ class actuator(node):
 		
 class goalchecker(node):
 	def __init__(self,label, *links):
-		node.__init__(self,label,1,{'function':{'input':['any'],'output':['string']}},links)
+		node.__init__(self,label,1,{'function':{'input':['world'],'output':['boolean']}},links)
 		
 	def funct(self):
 		super().funct()
-		link1_in=self.links[0].funct()
-		temp_world = link1_in['world']
-		return temp_world.check_goal_state()
+		if self.data == None:
+			link1_in=self.links[0].funct()
+			temp_world = link1_in['world']
+			prev_version = self.links[0].world_version
+			temp_world.upgrade()
+			if temp_world.version != prev_version + 1:
+				raise Exception("Invalid sequence of goalchecker")
+			self.data = temp_world.check_goal_state()
+			self.world = temp_world
+			self.world_version = self.world.version
+			super().update_program_expression('goalchecker',self.data)
+		return {'data':self.data, 'world':self.world}
 		
 
 class lambdagraph(node):
@@ -720,85 +732,95 @@ class lambdagraph(node):
 		
 	def funct(self):
 		super().funct()
-		_terminalnode=self.links[0]
-		global graph_label
-		global node_label
-		tempinitnodes = identity(node_label)
-		tempinitnodes.update_exp = 0
-		temp_g = Graph(graph_label)
-		temp_g.terminalnodes = [_terminalnode]
-		init_world = None
-		
-		def graph_return_nodes(self,temp_g,terminalnode):
-
-			linknodes = ()
-		# Recursively fetch all parent nodes
-			for i,sourcenode in enumerate(terminalnode.links):
-				#print (sourcenode)
-				if isinstance(sourcenode,world): ### terminalnode initialnode
-					temp_g.initialnodes.append(terminalnode)
-				elif len(sourcenode.links) == 0 and sourcenode.no_of_arguments >0: ######### sourcenode initialnode
-					temp_g.initialnodes.append(sourcenode)
-					graph_return_nodes(self,temp_g,sourcenode)
-				else:
-					graph_return_nodes(self,temp_g,sourcenode)
+		if self.data == None:
+			_terminalnode=self.links[0]
+			global graph_label
+			global node_label
+			global call_cnt
+			tempinitnodes = identity(node_label)
+			tempinitnodes.update_exp = 0
+			temp_g = Graph(graph_label)
+			temp_g.terminalnodes = [_terminalnode]
+			init_world = None
+			call_cnt =0
+			def graph_return_nodes(self,temp_g,terminalnode):
+				global call_cnt
+				linknodes = ()
+				super().funct()
+			# Recursively fetch all parent nodes
+				for i,sourcenode in enumerate(terminalnode.links):
+					#print (sourcenode)
+					if isinstance(sourcenode,world): ### terminalnode initialnode
+						temp_g.initialnodes.append(terminalnode)
+					elif len(sourcenode.links) == 0 and sourcenode.no_of_arguments >0: ######### sourcenode initialnode
+						temp_g.initialnodes.append(sourcenode)
+						graph_return_nodes(self,temp_g,sourcenode)
+						call_cnt +=1
+					else:
+						graph_return_nodes(self,temp_g,sourcenode)
+						call_cnt += 1
 
 			##print(linknodes)
 			#print(terminalnode)
-			temp_g.nodes.append(terminalnode)
+				temp_g.nodes.append(terminalnode)
 			#print(linknodes)
 			#return terminalnode
 		
-		graph_return_nodes(self,temp_g,_terminalnode)
-		temp_g.initialnodes = list(set(temp_g.initialnodes))
-		temp_g.nodes = list(set(temp_g.nodes))
-		temp_node_label=[]
-		for tempnode in temp_g.initialnodes:
-			temp_node_label.append(tempnode.label)
-		sorted_node_label_idx = sorted(range(len(temp_node_label)),key=temp_node_label.__getitem__)
-		temp_g.initialnodes =[temp_g.initialnodes[j] for j in sorted_node_label_idx]
-		temp_g = copy.deepcopy(temp_g)
-		for i in temp_g.nodes:
-			i.world = None
-			i.data = None
-			i.version = None
-			i.update_exp = 0
+			graph_return_nodes(self,temp_g,_terminalnode)
+			if call_cnt >100:
+				print(_terminalnode,call_cnt)
+			temp_g.initialnodes = list(set(temp_g.initialnodes))
+			temp_g.nodes = list(set(temp_g.nodes))
+			temp_node_label=[]
+			for tempnode in temp_g.initialnodes:
+				temp_node_label.append(tempnode.label)
+			sorted_node_label_idx = sorted(range(len(temp_node_label)),key=temp_node_label.__getitem__)
+			temp_g.initialnodes =[temp_g.initialnodes[j] for j in sorted_node_label_idx]
+			temp_g = copy.deepcopy(temp_g)
+			for i in temp_g.nodes:
+				i.world = None
+				i.data = None
+				i.version = None
+				i.update_exp = 0
 		#self.atype['function']['output'] = 
-		temp_g.atype['function']['output'][0] = _terminalnode.atype
+			temp_g.atype['function']['output'][0] = _terminalnode.atype
 		
 		##### Find all initial sensor nodes
-		temp_nodes = temp_g.nodes
-		for i_nodes in temp_g.nodes:
-			if isinstance(i_nodes,sensor):
-				if isinstance(i_nodes.links[0],world):
-					init_world = i_nodes.links[0]
-					temp_nodes.remove(i_nodes)
+			temp_nodes = temp_g.nodes
+			for i_nodes in temp_g.nodes:
+				if isinstance(i_nodes,sensor):
+					if isinstance(i_nodes.links[0],world):
+						init_world = i_nodes.links[0]
+						temp_nodes.remove(i_nodes)
 					######## Change child nodes pointer to initial identity node
-					for j_nodes in temp_g.nodes:
-						new_links =()
-						for k_link in j_nodes.links:
-							if k_link == i_nodes:
-								new_links += (tempinitnodes,)
-							else:
-								new_links += (k_link,)
-						j_nodes.links = new_links
+						for j_nodes in temp_g.nodes:
+							new_links =()
+							for k_link in j_nodes.links:
+								if k_link == i_nodes:
+									new_links += (tempinitnodes,)
+								else:
+									new_links += (k_link,)
+							j_nodes.links = new_links
 					############ delete init sensor node from initialnodes and terminal nodes
-					try:
-						temp_g.initialnodes.remove(i_nodes)
-					except:
-						None
-					try:
-						temp_g.terminalnodes.remove(i_nodes)
-						temp_g.terminalnodes.append(tempinitnodes)
-					except:
-						None
+						try:
+							temp_g.initialnodes.remove(i_nodes)
+						except:
+							None
+						try:
+							temp_g.terminalnodes.remove(i_nodes)
+							temp_g.terminalnodes.append(tempinitnodes)
+						except:
+							None
 		############# Remove all initial sensor nodes from nodes list
-		temp_g.nodes = temp_nodes
-		temp_g.nodes.append(tempinitnodes)
-		temp_g.initialnodes.append(tempinitnodes)
-		self.world = init_world		
-		super().update_program_expression('lambdagraph','null')	
-		return {'data':temp_g,'world':self.world}
+			temp_g.nodes = temp_nodes
+			temp_g.nodes.append(tempinitnodes)
+			temp_g.initialnodes.append(tempinitnodes)
+			self.world = init_world
+			self.world_version = self.world.version
+			#self.world =None
+			super().update_program_expression('lambdagraph','null')
+			self.data = temp_g
+		return {'data':copy.deepcopy(self.data),'world':self.world}
 		
 		
 		

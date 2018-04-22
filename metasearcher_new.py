@@ -21,6 +21,7 @@ corpus_of_all_objects = {'sensor_number':'sensor(node_label,\'number\')',
 					'conjunct':'conjunct(node_label)',
 					'disjunct':'disjunct(node_label)',
 					'negate':'negate(node_label)',
+					'goalchecker': 'goalchecker(node_label)',
 					'constant'+str(add_obj):'constant(node_label,add_obj)'}
 
 time_limit = 10000
@@ -28,9 +29,10 @@ node_label = 1
 node_list_dict={}
 existing_programs = dict()
 C = 0.02
+call_cnt = 0
 					
 #corpus_index = ['sensor_number','actuator_number','identity','constant0','constant1','constant2','constant3','gaurd','equal','lambdagraph','recurse']
-corpus_index = ['sensor_number','actuator_number','equal','gaurd','lambdagraph','recurse','constant1']
+corpus_index = ['sensor_number','actuator_number','equal','lambdagraph','constant1','recurse','goalchecker','constant2','constant3']
 #corpus_index = ['sensor_number','actuator_number','equal','constant1']
 
 
@@ -86,15 +88,19 @@ def initialize_corpus(corpus_index):
 
 
 def check_equivalent_program(search_graph,executable_node):
-	for i_node in search_graph.nodes:
-		if str(executable_node.program_expression['data']) == str(i_node.program_expression['data']) and str(executable_node.program_expression['world']) == str(i_node.program_expression['world']) and executable_node != i_node:
-			executable_node.equivalent_prog =i_node.label
-			break
+	gen_nodes = [i_nodes for i_nodes_index,i_nodes in enumerate(search_graph.nodes) if  i_nodes.executed == 1 and i_nodes.equivalent_prog == 0]
+	#gen_nodes = search_graph.nodes
+	for i_node in gen_nodes:
+		if i_node.program_expression != None:
+			if str(executable_node.program_expression['data']) == str(i_node.program_expression['data']) and str(executable_node.program_expression['world']) == str(i_node.program_expression['world']) and executable_node != i_node:
+				executable_node.equivalent_prog =i_node.label
+				break
 
 def evaluate_a_graph(search_graph,executable_node,PHASE):
 	global node_label
 	global time_limit
 	global C
+	global call_cnt
 	executed = 0
 	#global all_node_dict
 	output = None
@@ -119,18 +125,22 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 		#print('executed')
 		executed = 1
 		executable_node.program_expression = copy.deepcopy(new_term_node.program_expression)
-		executable_node.executed = 1
 		check_equivalent_program(search_graph,executable_node)
+		executable_node.executed = 1
 	except world_exception: #### Invalid world action
 		#print('world failed')
 		executable_node.world_failed = 1
 	except time_exception:
 		#print('time failed')
 		executable_node.time_failed = 1
-	except:
+	except Exception as e:
 		#print('semantic failed')
+		#print(executable_node)
+		#print(e)
 		executable_node.semantic_failed = 1
 	finally:
+		if call_cnt >100:
+			print(executable_node)
 		del (current_program_graph.nodes)
 		del (current_program_graph.initialnodes)
 		del (current_program_graph.terminalnodes)
@@ -138,12 +148,20 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 		del (goal_checker_node)
 		#del (output)
 		#gc.collect()
-		return output
+		if output != None:
+			return output['data']
+		else:
+			return output
 		
 		
-def check_link_group_type_compatibility(target_node,source_nodes,target_node_name):
+def check_link_group_type_compatibility(source_nodes,target_node_name):
 	if target_node_name == 'gaurd':
-		if source_nodes[1].atype['function']['output'] == source_nodes[2].atype['function']['output']:
+		if (source_nodes[1].atype['function']['output'] == source_nodes[2].atype['function']['output']) or (source_nodes[1].atype['function']['output'] =='some' or source_nodes[2].atype['function']['output'] =='some') or ('function' in source_nodes[1].atype['function']['output'] and 'function' in source_nodes[2].atype['function']['output']) or ('list' in source_nodes[1].atype['function']['output'] and 'list' in source_nodes[2].atype['function']['output']):
+			return 0
+		else:
+			return 1
+	elif target_node_name == 'equal':
+		if (source_nodes[0].atype['function']['output'] == source_nodes[1].atype['function']['output']) or (source_nodes[0].atype['function']['output'] =='some' or source_nodes[1].atype['function']['output'] =='some') or ('function' in source_nodes[0].atype['function']['output'] and 'function' in source_nodes[1].atype['function']['output']) or ('list' in source_nodes[0].atype['function']['output'] and 'list' in source_nodes[1].atype['function']['output']):
 			return 0
 		else:
 			return 1
@@ -226,6 +244,9 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 		if program_probability*PHASE < 1: ####### if probability criteria not satisfied
 		#	already_checked_pairs[PHASE].append([node.label for node in parent_nodes])
 			continue
+			
+		if check_link_group_type_compatibility(parent_nodes,child_node_name):
+			continue
 					
 		############## add child node
 		child_node = eval(corpus_of_objects[child_node_name])
@@ -242,8 +263,8 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 				
 		######### execute newly added node 
 		output = evaluate_a_graph(search_graph,child_node,PHASE)
-		if output == 'Goal Reached':
-			print(output)
+		if output == True:
+			print('Goal Reached')
 			return(child_node,added_node_flag)
 			
 	return(None,added_node_flag)
@@ -280,8 +301,9 @@ def execute_graph(search_graph,PHASE):
 	for executable_node in gen1:
 		#print(executable_node)
 		output=evaluate_a_graph(search_graph,executable_node,PHASE)
-		if output == 'Goal Reached':
+		if output == True:
 			executed = 1
+			print('Goal Reached')
 			return (executable_node,executed)
 		elif output != None:
 			executed = 1
@@ -289,21 +311,30 @@ def execute_graph(search_graph,PHASE):
 	return(None,executed)			
 
 		
-def metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,PHASE_limit):
+def metasearcher(corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,PHASE_limit):
 	# Initialize corpus
 	global graph_label
 	global node_label
 	PHASE = 2
 	#corpus_of_objects = init_corpus[0]
 	#init_type_compatible_node_links = init_corpus[1]
-	
+	initialinput = eval(corpus_of_objects[corpus_index[0]]) ##### create first sensor node
+	initialinput.links = (init_world,) ##### attach first sensor node with initial world
+	initialinput.executed = 1
+#initialinput.probability = [1]
+	initialinput.program_probability =1
+	initialinput.factored_program_probability['0-'+str(initialinput.label)] = 1
+	initialinput.child_node_init_probability = init_type_compatible_node_links[corpus_index[0]][0]['init_probability']
+	initialinput.program_expression = {'data':symbols('iW().iS()'),'world':'iW().iS()'}
+	search_graph = Graph(graph_label)
+	search_graph.add_node(initialinput)
 	print(search_graph)
 	#search_graph = extend_graph(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links)
 	while PHASE < PHASE_limit:
 		# execute time failed nodes from previous phase
 		child_node,executed=execute_graph(search_graph,PHASE)
 		if child_node != None:
-			return child_node
+			return (child_node,search_graph)
 			
 		if executed ==1:
 			print('time_executed')
@@ -315,23 +346,13 @@ def metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_typ
 			else : 
 				print('executed')
 		if child_node != None:
-			return child_node
+			return (child_node,search_graph)
 		print (PHASE)
 		PHASE *= 2
-	return None	
+	return (None,search_graph)	
 import cProfile
 (corpus_of_objects,init_type_compatible_node_links) = initialize_corpus(corpus_index)
 already_checked_pairs = dict()
-initialinput = eval(corpus_of_objects[corpus_index[0]]) ##### create first sensor node
-initialinput.links = (init_world,) ##### attach first sensor node with initial world
-initialinput.executed = 1
-#initialinput.probability = [1]
-initialinput.program_probability =1
-initialinput.factored_program_probability['0-'+str(initialinput.label)] = 1
-initialinput.child_node_init_probability = init_type_compatible_node_links[corpus_index[0]][0]['init_probability']
-initialinput.program_expression = {'data':symbols('iW().iS()'),'world':'iW().iS()'}
-search_graph = Graph(graph_label)
-search_graph.add_node(initialinput)
 existing_programs = dict()
-#cProfile.run('exec_node = metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,5000)')
-exec_node = metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,100)
+#cProfile.run('exec_node,search_graph = metasearcher(corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,150000)')
+#exec_node,search_graph = metasearcher(corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,1200000)

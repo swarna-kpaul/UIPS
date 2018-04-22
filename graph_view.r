@@ -4,6 +4,7 @@ edges<-read.csv('C:/skp/phd/UIPS/edge_list.csv')
 nodes<-read.csv('C:/skp/phd/UIPS/node_list.csv')
 #nodes <- data.frame(id=unique(c(as.character(edges$from),as.character(edges$to))))
 nodes$label = gsub("[0-9]*$","",nodes$id)
+nodes$group = nodes$label
 nodes$title = paste0("<p>",nodes$title,"</p>")
-net<-visNetwork(nodes, edges, height = "700px", width = "100%") %>% visEdges(arrows ="to") %>% visIgraphLayout() 
+net<-visNetwork(nodes, edges, height = "700px", width = "100%") %>% visEdges(arrows ="to") %>% visIgraphLayout() %>% visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%visLegend()
 visSave(net,"C:/skp/phd/UIPS/graph_view.html",selfcontained = FALSE)

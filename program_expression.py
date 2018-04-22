@@ -56,6 +56,7 @@ def get_program_expression(node_name,terminalnode,node_output):
 			current_expression = {'data':symbols(type(terminalnode.K).__name__), 'world':parent_expression['world']}
 		else: #### constant returns data
 			current_expression = {'data':terminalnode.K, 'world':parent_expression['world']}
+		#print(current_expression)
 	elif  'sensor' in node_name:
 		if isinstance(terminalnode.links[0],world): ## initial sensornode
 			#current_expression = {'data':symbols('world3'),'world':['iW','.:','iS:']}
@@ -65,6 +66,10 @@ def get_program_expression(node_name,terminalnode,node_output):
 			new_world = parent_expression['world'] + '.S()'
 			#current_expression = {'data':symbols('world'+str(len(new_world))), 'world': new_world}
 			#current_expression = {'data':symbols(''.join([str(i) for i in new_world])), 'world': new_world}
+			current_expression = {'data':symbols(new_world), 'world': new_world}
+	elif  'goalchecker' in node_name:
+			parent_expression = terminalnode.links[0].program_expression
+			new_world = parent_expression['world'] + '.GC()'
 			current_expression = {'data':symbols(new_world), 'world': new_world}
 	elif 'actuator' in node_name:
 		parent_expression = terminalnode.links[0].program_expression
@@ -105,8 +110,12 @@ def get_program_expression(node_name,terminalnode,node_output):
 			current_expression = {'data':symbols('('+str(parent_expression2['data'])+'.sum.'+str(parent_expression3['data'])+').'+ str(parent_expression1['data'])),'world':best_world}
 			
 	elif node_name == 'lambdagraph':
-		parent_expression = str(terminalnode.links[0].program_expression['data'])[9:]
-		current_expression = {'data':symbols(parent_expression),'world': ''}
+		parent_expression = str(terminalnode.links[0].program_expression['data'])
+		if parent_expression[0:9] == 'iW().iS()':
+			parent_expression = parent_expression[9:]
+			parent_expression = 'iW().'+parent_expression
+		#parent_expression = 'l().'+parent_expression
+		current_expression = {'data':symbols(parent_expression),'world': 'iW()'}
 		
 	elif node_name == 'recurse':
 		parent_expression1 = terminalnode.links[0].program_expression

@@ -24,4 +24,14 @@ import copy
 # #B=copy.copy(locals())
 
 
+s = sensor(node_label,'number',init_world)
+k1 = constant(node_label,1,s)
+act = actuator(node_label,'number',k1)
+s1 = sensor(node_label,'number',act)
+g = goalchecker(node_label,act)
+l1 = lambdagraph(node_label,g)
+eq = equal(node_label,k1,s)
+l2 = lambdagraph(node_label,eq)
+r = recurse(node_label,l1,l1,s)
+
 # C = {k:v for k,v in globals().items() if k not in A and k != 'A' and k != 'C'}
