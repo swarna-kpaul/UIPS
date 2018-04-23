@@ -627,6 +627,7 @@ class recurse(node):
 		
 	def funct(self):
 		global node_label
+		#print(str(self.links[1].program_expression['data']))
 		super().funct()
 		node_list_dict ={}
 		if self.data == None:

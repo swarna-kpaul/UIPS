@@ -3,7 +3,7 @@ from operator import itemgetter
 graph_label = 1
 from functools import reduce
 class Graph:
-	def __init__(self,label):
+	def __init__(self,label,*options):
 		global graph_label
 		self.label = label
 		self.nodes = []
@@ -11,6 +11,10 @@ class Graph:
 		self.initialnodes = []
 		self.atype = {'function':{'input':['none'],'output':['none']}}
 		self.glinks = ()
+		if len(options)>0:
+			self.delterminalnodes = options[0]
+		else:
+			self.delterminalnodes = 1
 		graph_label += 1
 			
 	def add_node(self, innode,*links):
@@ -32,11 +36,12 @@ class Graph:
 					# raise Exception ('links not in graph')
 			innode.links = links
 			# Remove non terminal nodes
-			for item in links:
-				try:
-					self.terminalnodes.remove(item)
-				except:
-					valid = 'ok'
+			if self.delterminalnodes == 1:
+				for item in links:
+					try:
+						self.terminalnodes.remove(item)
+					except:
+						valid = 'ok'
 				#self.atype['function']['output'].remove(innode.atype['function']['output'])
 				
 		self.terminalnodes.append(innode)

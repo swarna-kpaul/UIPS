@@ -28,11 +28,11 @@ time_limit = 10000
 node_label = 1
 node_list_dict={}
 existing_programs = dict()
-C = 0.02
+C = 0.1
 call_cnt = 0
 					
 #corpus_index = ['sensor_number','actuator_number','identity','constant0','constant1','constant2','constant3','gaurd','equal','lambdagraph','recurse']
-corpus_index = ['sensor_number','actuator_number','equal','lambdagraph','constant1','recurse','goalchecker','constant2','constant3']
+corpus_index = ['sensor_number','actuator_number','lambdagraph','constant1','recurse','goalchecker','constant2','constant3']
 #corpus_index = ['sensor_number','actuator_number','equal','constant1']
 
 
@@ -127,6 +127,7 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 		executable_node.program_expression = copy.deepcopy(new_term_node.program_expression)
 		check_equivalent_program(search_graph,executable_node)
 		executable_node.executed = 1
+		executable_node.time_failed = 0
 	except world_exception: #### Invalid world action
 		#print('world failed')
 		executable_node.world_failed = 1
@@ -165,6 +166,11 @@ def check_link_group_type_compatibility(source_nodes,target_node_name):
 			return 0
 		else:
 			return 1
+	elif target_node_name == 'recurse':
+		if 'iW()' not in (str(source_nodes[1].program_expression['data'])):
+			return 1
+		else : 
+			return 0
 	else:
 		return 0
 		
@@ -262,7 +268,11 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 		child_node.child_node_init_probability = type_compatible_node_links[child_node_name][0]['init_probability']
 				
 		######### execute newly added node 
-		output = evaluate_a_graph(search_graph,child_node,PHASE)
+		if  child_node.program_probability*PHASE > 1:
+			output = evaluate_a_graph(search_graph,child_node,PHASE)
+		else:
+			child_node.time_failed =1
+			output = None
 		if output == True:
 			print('Goal Reached')
 			return(child_node,added_node_flag)
@@ -296,7 +306,7 @@ def extend_execute_graph(search_graph,corpus_index,corpus_of_objects,type_compat
 	return(None,added_node_flag)
 	
 def execute_graph(search_graph,PHASE):
-	gen1 = [executable_nodes for executable_nodes in copy.copy(search_graph.nodes) if  executable_nodes.executed == 0 and executable_nodes.time_failed == 1]
+	gen1 = [executable_nodes for executable_nodes in copy.copy(search_graph.nodes) if  executable_nodes.executed == 0 and executable_nodes.time_failed == 1 and executable_nodes.program_probability*PHASE>1]
 	executed = 0
 	for executable_node in gen1:
 		#print(executable_node)
