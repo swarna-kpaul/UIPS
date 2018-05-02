@@ -126,6 +126,7 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 	current_program_graph= search_graph.return_subgraph(executable_node)
 	new_term_node = current_program_graph.terminalnodes[0]
 	probability = executable_node.program_probability
+	#print (executable_node,probability)
 	time_limit = PHASE*probability/C
 	if PHASE*probability/C <1:
 		return output
@@ -256,8 +257,9 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 								
 		######## Check for program presence	
 		is_exist_program,par_node_label_list = 	check_program_presence(parent_nodes,child_node_name)
-		if is_exist_program == 1: ##### Program already exist
-			continue
+		if is_exist_program != 0: ##### Program already exist
+			if is_exist_program.executed == 1 or is_exist_program.world_failed == 1 or is_exist_program.semantic_failed == 1 or is_exist_program.equivalent_prog != 0 or is_exist_program.time_failed ==1:
+				continue
 		########## Check if pair is already checked
 		#if [node.label for node in parent_nodes] in already_checked_pairs[PHASE]:
 		#	continue
@@ -273,27 +275,31 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 			continue
 					
 		############## add child node
-		child_node = eval(corpus_of_objects[child_node_name])
-		child_node.factored_program_probability  = merged_factored_program_probability 
-		child_node.program_probability = program_probability
-		search_graph.add_node(child_node,*parent_nodes)
-		added_node_flag = 1
-		existing_programs[str(par_node_label_list) + child_node_name] = 1
-		########## update child init probability of newly added node
-		
-		#child_node.child_node_init_probability = type_compatible_node_links[child_node_name][0]['init_probability']
-				
-		######### execute newly added node 
-		output = evaluate_a_graph(search_graph,child_node,PHASE)
+		if is_exist_program == 0:
+			child_node = eval(corpus_of_objects[child_node_name])
+			child_node.factored_program_probability  = merged_factored_program_probability 
+			child_node.program_probability = program_probability
+			search_graph.add_node(child_node,*parent_nodes)
+			added_node_flag = 1
+			#existing_programs[str(par_node_label_list) + child_node_name] = 1
+			existing_programs[str(par_node_label_list) + child_node_name] = child_node
+			########## update child init probability of newly added node
+			######### execute newly added node 
+			output = evaluate_a_graph(search_graph,child_node,PHASE)
 			
-		if 	child_node.semantic_failed == 0  and child_node.equivalent_prog == 0:
-			if child_node_name in ['identity','head','tail','cons']:
+			if 	child_node.semantic_failed == 0  and child_node.equivalent_prog == 0:
+				if child_node_name in ['identity','head','tail','cons']:
 			########### rerun type compatitbilty update
-				type_compatible_node_links = create_type_compatibility(type_compatible_node_links,child_node_name,child_node,corpus_of_objects,corpus_index) ## update type compatibility
+					type_compatible_node_links = create_type_compatibility(type_compatible_node_links,child_node_name,child_node,corpus_of_objects,corpus_index) ## update type compatibility
 			
-			child_node.child_node_init_probability = copy.deepcopy(type_compatible_node_links[child_node_name])	
-	
-			
+				child_node.child_node_init_probability = copy.deepcopy(type_compatible_node_links[child_node_name])	
+		else:
+			#print('existin prog')
+			#print(is_exist_program)
+			output = evaluate_a_graph(search_graph,is_exist_program,PHASE)
+			#child_node.child_node_init_probability = type_compatible_node_links[child_node_name][0]['init_probability']
+				
+		
 		if output == True:
 			print('Goal Reached')
 			return(child_node,added_node_flag)
@@ -341,26 +347,42 @@ def execute_graph(search_graph,PHASE):
 	gc.collect()		
 	return(None,executed)			
 
+def reset_search_graph(search_graph,init_world):
+	for i_nodes in search_graph.nodes:
+		i_nodes.executed =0
+		i_nodes.world_failed = 0
+		i_nodes.time_failed = 0
+		i_nodes.world = None
+		i_nodes.world_version = None
+	search_graph.nodes[0].links = (init_world,)
+	search_graph.nodes[0].executed=1
+	
+def initialize_search_graph(init_world,corpus_index):
+	global graph_label
+	global node_label
+	global existing_programs
+	node_label = 1
+	graph_label = 1
+	(corpus_of_objects,init_type_compatible_node_links) = initialize_corpus(corpus_index)
+	initialinput = eval(corpus_of_objects[corpus_index[0]]) ##### create first sensor node
+	#initialinput.links = (init_world,) ##### attach first sensor node with initial world
+	initialinput.executed = 1
+	initialinput.program_probability =1
+	initialinput.factored_program_probability['0-'+str(initialinput.label)] = {'node_name':corpus_index[0],'link':0,'init_probability':1}
+	initialinput.child_node_init_probability = copy.deepcopy(init_type_compatible_node_links[corpus_index[0]])
+	initialinput.program_expression = {'data':symbols('iW().iS()'),'world':'iW().iS()'}
+	search_graph = Graph(graph_label)
+	search_graph.add_node(initialinput)
+	existing_programs = dict()
+	return (search_graph,corpus_of_objects,init_type_compatible_node_links)
 		
-def metasearcher(corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,PHASE_limit):
+def metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,PHASE_limit):
 	# Initialize corpus
 	global graph_label
 	global node_label
-	global search_graph
+	#global search_graph
 	PHASE = 2
-	#corpus_of_objects = init_corpus[0]
-	#init_type_compatible_node_links = init_corpus[1]
-	initialinput = eval(corpus_of_objects[corpus_index[0]]) ##### create first sensor node
-	initialinput.links = (init_world,) ##### attach first sensor node with initial world
-	initialinput.executed = 1
-#initialinput.probability = [1]
-	initialinput.program_probability =1
-	initialinput.factored_program_probability['0-'+str(initialinput.label)] = {'node_name':'sensor_number','link':0,'init_probability':1}
-	initialinput.child_node_init_probability = copy.deepcopy(init_type_compatible_node_links[corpus_index[0]])
-	initialinput.program_expression = {'data':symbols('iW().iS()'),'world':'iW().iS()'}
-	#search_graph = Graph(graph_label)
-	search_graph.add_node(initialinput)
-	print(search_graph)
+	reset_search_graph(search_graph,init_world)
 	#search_graph = extend_graph(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links)
 	while PHASE < PHASE_limit:
 		# execute time failed nodes from previous phase
@@ -383,9 +405,8 @@ def metasearcher(corpus_index,init_world,corpus_of_objects,init_type_compatible_
 		PHASE *= 2
 	return (None,search_graph)	
 import cProfile
-(corpus_of_objects,init_type_compatible_node_links) = initialize_corpus(corpus_index)
-#already_checked_pairs = dict()
-existing_programs = dict()
-search_graph = Graph(graph_label)
-#cProfile.run('exec_node,search_graph = metasearcher(corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,150000)')
+
+(search_graph,corpus_of_objects,init_type_compatible_node_links) = initialize_search_graph(init_world,corpus_index)
+
+#cProfile.run('exec_node,search_graph = metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,150000)')
 #exec_node,search_graph = metasearcher(corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,1200000)
