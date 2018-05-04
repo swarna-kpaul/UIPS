@@ -36,6 +36,7 @@ class node:
 		self.program_expression =None
 		self.update_exp = 1
 		self.equivalent_prog =0
+		self.reward = 0
 	
 	
 	

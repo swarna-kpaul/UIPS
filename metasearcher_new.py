@@ -38,15 +38,15 @@ corpus_index = ['sensor_number','actuator_number','lambdagraph','constant1','rec
 
 
 	
-def modify_probability(child_node_probability_dict,del_probability,parent_node):
+def modify_probability(child_node_name_link_pair,del_probability,parent_node):
 		##### adjust other child node probabilities
 	#target_node_name = child_node_probability_dict['node_name']
 	divide_factor = len(parent_node.child_node_init_probability) - 1
 	for k,v in enumerate(parent_node.child_node_init_probability):
-		if v != child_node_probability_dict:
-			parent_node.child_node_init_probability[k]['init_probability'] -= del_probability/divide_factor
-		else:
+		if v['node_name'] == child_node_name_link_pair[0] and v['link'] == child_node_name_link_pair[1]:
 			parent_node.child_node_init_probability[k]['init_probability'] += del_probability
+		else:
+			parent_node.child_node_init_probability[k]['init_probability'] -= del_probability/divide_factor
 		
 
 def check_type_compatibility(source_node,target_node,target_node_link):
@@ -138,6 +138,7 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 	#print(time_limit)
 	try:
 		output = current_program_graph.eval_graph()
+		reward = output['world'].get_reward()
 		output=output['world'].check_goal_state()
 		#print('executed')
 		executed = 1
@@ -147,18 +148,22 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 		executable_node.time_failed = 0
 	except world_exception: #### Invalid world action
 		#print('world failed')
+		reward = 0
 		executable_node.world_failed = 1
 	except time_exception:
 		#print('time failed')
+		reward = 0 
 		executable_node.time_failed = 1
 	except Exception as e:
 		#print('semantic failed')
 		#print(executable_node)
 		#print(e)
+		reward = 0
 		executable_node.semantic_failed = 1
 	finally:
 		if call_cnt >100:
 			print(executable_node)
+		executable_node.reward = reward
 		del (current_program_graph.nodes)
 		del (current_program_graph.initialnodes)
 		del (current_program_graph.terminalnodes)
@@ -166,10 +171,11 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 		#del (goal_checker_node)
 		#del (output)
 		#gc.collect()
-		if output != None:
-			return output
-		else:
-			return output
+		#executable_node
+		#if output != None:
+		return output
+		#else:
+		#	return output
 		
 		
 def check_link_group_type_compatibility(source_nodes,target_node_name):
@@ -264,18 +270,18 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 		#if [node.label for node in parent_nodes] in already_checked_pairs[PHASE]:
 		#	continue
 		
-		# check of the child node satisfies probability*PHASE>1 criteria
-		merged_factored_program_probability  = check_program_probability_criteria(parent_nodes,child_node_name)
-		program_probability = calculate_total_program_probability(merged_factored_program_probability)
-		if program_probability*PHASE < 1: ####### if probability criteria not satisfied
-		#	already_checked_pairs[PHASE].append([node.label for node in parent_nodes])
-			continue
-			
+		
 		if check_link_group_type_compatibility(parent_nodes,child_node_name):
 			continue
 					
 		############## add child node
 		if is_exist_program == 0:
+			# check of the child node satisfies probability*PHASE>1 criteria
+			merged_factored_program_probability  = check_program_probability_criteria(parent_nodes,child_node_name)
+			program_probability = calculate_total_program_probability(merged_factored_program_probability)
+			if program_probability*PHASE < 1: ####### if probability criteria not satisfied
+		#	already_checked_pairs[PHASE].append([node.label for node in parent_nodes])
+				continue
 			child_node = eval(corpus_of_objects[child_node_name])
 			child_node.factored_program_probability  = merged_factored_program_probability 
 			child_node.program_probability = program_probability
@@ -287,6 +293,9 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 			######### execute newly added node 
 			output = evaluate_a_graph(search_graph,child_node,PHASE)
 			
+			############### incremental learning
+			update_probability(child_node)
+			
 			if 	child_node.semantic_failed == 0  and child_node.equivalent_prog == 0:
 				if child_node_name in ['identity','head','tail','cons']:
 			########### rerun type compatitbilty update
@@ -296,9 +305,17 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 		else:
 			#print('existin prog')
 			#print(is_exist_program)
+			is_exist_program.program_probability = calculate_total_program_probability(is_exist_program.factored_program_probability)
+			if is_exist_program.program_probability*PHASE < 1: ####### if probability criteria not satisfied
+		#	already_checked_pairs[PHASE].append([node.label for node in parent_nodes])
+				continue
 			output = evaluate_a_graph(search_graph,is_exist_program,PHASE)
 			#child_node.child_node_init_probability = type_compatible_node_links[child_node_name][0]['init_probability']
-				
+			child_node = is_exist_program
+			###### incremental learning
+			update_probability(is_exist_program)	
+			if output == True:
+				print(is_exist_program)
 		
 		if output == True:
 			print('Goal Reached')
@@ -338,9 +355,10 @@ def execute_graph(search_graph,PHASE):
 	for executable_node in gen1:
 		#print(executable_node)
 		output=evaluate_a_graph(search_graph,executable_node,PHASE)
+		update_probability(executable_node)
 		if output == True:
 			executed = 1
-			print('Goal Reached')
+			print('Goal Reached 2')
 			return (executable_node,executed)
 		elif output != None:
 			executed = 1
@@ -354,6 +372,7 @@ def reset_search_graph(search_graph,init_world):
 		i_nodes.time_failed = 0
 		i_nodes.world = None
 		i_nodes.world_version = None
+		i_nodes.reward = 0
 	search_graph.nodes[0].links = (init_world,)
 	search_graph.nodes[0].executed=1
 	
@@ -387,11 +406,11 @@ def metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_typ
 	while PHASE < PHASE_limit:
 		# execute time failed nodes from previous phase
 		child_node,executed=execute_graph(search_graph,PHASE)
+		if executed ==1:
+			print('time_executed')
 		if child_node != None:
 			return (child_node,search_graph)
 			
-		if executed ==1:
-			print('time_executed')
 		while True:
 			# extend and execute nodes in graph
 			child_node,added_node_flag = extend_execute_graph(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,PHASE) 

@@ -4,6 +4,7 @@ exec(open('C:/skp/phd/UIPS/graph_class.py').read())
 exec(open('C:/skp/phd/UIPS/environment.py').read())
 exec(open('C:/skp/phd/UIPS/graph_draw.py').read())
 exec(open('C:/skp/phd/UIPS/metasearcher_new.py').read())
+exec(open('C:/skp/phd/UIPS/incremental_learning.py').read())
 import copy
 # A=copy.copy(locals())
 # #diffA = copy.copy(A)

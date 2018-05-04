@@ -10,6 +10,7 @@ class world:
 		self.world_funct = init_world
 		self.state = init_state
 		self.goal_state = goal_state
+		self.world_failed = 0
 	
 	def get_data(self):
 		
@@ -22,6 +23,7 @@ class world:
 		try: 
 			self.state = self.world_funct(self.state,action)
 		except:
+			self.world_failed = 1
 			raise world_exception('invalid action')
 	
 	def funct(self):
@@ -32,6 +34,14 @@ class world:
 			return True
 		else:
 			return False
+			
+	def get_reward(self):
+		if self.goal_state == self.state[0:len(self.goal_state)]:
+			return 1
+		elif self.world_failed == 1:
+			return -1
+		else:
+			return 0
 		
 		
 init_state = [1,1,[1,0]]
