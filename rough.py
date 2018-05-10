@@ -11,6 +11,10 @@ exec(open('C:/skp/phd/UIPS/type_class.py').read())_
 
 exec(open('C:/skp/phd/UIPS/environment.py').read())
 
+goal_state = [1,2]
+init_world = world('number',maze,init_state,goal_state)
+
+exec_node,search_graph = metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_type_compatible_node_links,150000)
 
 A=locals()
 diffA = A

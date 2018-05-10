@@ -152,7 +152,9 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 		executable_node.world_failed = 1
 	except time_exception:
 		#print('time failed')
-		reward = 0 
+		reward = -time_limit/1000
+		if reward <-1:
+			reward = -1
 		executable_node.time_failed = 1
 	except Exception as e:
 		#print('semantic failed')
@@ -289,7 +291,23 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 			added_node_flag = 1
 			#existing_programs[str(par_node_label_list) + child_node_name] = 1
 			existing_programs[str(par_node_label_list) + child_node_name] = child_node
-			########## update child init probability of newly added node
+			########## update child init probability of parents of newly added node
+			
+			same_node,child_probability_list = match_subprograms(search_graph,child_node,20)
+			#print(child_probability_list,same_node)
+			if child_probability_list == None:
+				print(same_node)
+			if same_node != None:
+				#print (child_probability_list)
+				#print (same_node)
+				#print(child_node)
+				for i,v in enumerate(child_node.links):
+					i_probability = [i_prob['init_probability'] for i_prob in v.child_node_init_probability if i_prob['link']==i and i_prob['node_name']==child_node_name][0]
+					modify_probability((child_node_name,i),child_probability_list[i],v)
+				
+			child_node.program_probability =  calculate_total_program_probability(child_node.factored_program_probability)
+			#if child_node.program_probability*PHASE < 1: ####### if probability criteria not satisfied
+			#	continue
 			######### execute newly added node 
 			output = evaluate_a_graph(search_graph,child_node,PHASE)
 			
@@ -302,6 +320,8 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 					type_compatible_node_links = create_type_compatibility(type_compatible_node_links,child_node_name,child_node,corpus_of_objects,corpus_index) ## update type compatibility
 			
 				child_node.child_node_init_probability = copy.deepcopy(type_compatible_node_links[child_node_name])	
+				if child_node.child_node_init_probability == None:
+					print(child_node)
 		else:
 			#print('existin prog')
 			#print(is_exist_program)
@@ -333,6 +353,10 @@ def extend_execute_graph(search_graph,corpus_index,corpus_of_objects,type_compat
 	for child_node_name in corpus_index:
 		child_node = eval(corpus_of_objects[child_node_name])
 		### Create list of extendable parent nodes
+		#k= [i for i in search_graph.nodes if i.child_node_init_probability == None]
+		#if k:
+		#	print(k)
+		#	return(child_node,1)
 		gen = [extendable_nodes for extendable_nodes_index,extendable_nodes in enumerate(copy.copy(search_graph.nodes)) 
 			if  extendable_nodes.executed == 1 and extendable_nodes.semantic_failed == 0 
 			and extendable_nodes.world_failed == 0 and extendable_nodes.equivalent_prog == 0
@@ -346,16 +370,21 @@ def extend_execute_graph(search_graph,corpus_index,corpus_of_objects,type_compat
 			added_node_flag =1
 		if child_node != None:
 			return (child_node,added_node_flag)
-	gc.collect()
+	#gc.collect()
 	return(None,added_node_flag)
 	
-def execute_graph(search_graph,PHASE):
+def execute_graph(search_graph,corpus_index,corpus_of_objects,type_compatible_node_links,PHASE):
 	gen1 = [executable_nodes for executable_nodes in copy.copy(search_graph.nodes) if  executable_nodes.executed == 0 and executable_nodes.time_failed == 1 and executable_nodes.program_probability*PHASE>1]
 	executed = 0
 	for executable_node in gen1:
 		#print(executable_node)
 		output=evaluate_a_graph(search_graph,executable_node,PHASE)
 		update_probability(executable_node)
+		if 	executable_node.semantic_failed == 0  and executable_node.equivalent_prog == 0 and  type(executable_node).__name__ in ['identity','head','tail','cons']:
+			########### rerun type compatitbilty update
+			node_name = get_node_name(executable_node)
+			type_compatible_node_links = create_type_compatibility(type_compatible_node_links,node_name,executable_node,corpus_of_objects,corpus_index) ## update type compatibility
+			executable_node.child_node_init_probability = copy.deepcopy(type_compatible_node_links[node_name])	
 		if output == True:
 			executed = 1
 			print('Goal Reached 2')
@@ -405,7 +434,7 @@ def metasearcher(search_graph,corpus_index,init_world,corpus_of_objects,init_typ
 	#search_graph = extend_graph(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links)
 	while PHASE < PHASE_limit:
 		# execute time failed nodes from previous phase
-		child_node,executed=execute_graph(search_graph,PHASE)
+		child_node,executed=execute_graph(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,PHASE)
 		if executed ==1:
 			print('time_executed')
 		if child_node != None:

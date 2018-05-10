@@ -11,7 +11,7 @@ def calculate_trailing_probability(factored_program_probability,current_edge_nod
 
 def calculate_delta_probability(factored_program_probability,sourcenode,terminalnode,reward):
 	delta_probability = 1
-	alpha = 0.8
+	alpha = 0.3
 	current_edge = [(k,v) for k,v in factored_program_probability.items() if  k == str(sourcenode.label)+'-'+str(terminalnode.label)][0]
 	current_edge_node_labels = current_edge[0].split('-')
 	current_probability_mass = current_edge[1]['init_probability']
@@ -69,3 +69,58 @@ def update_probability(terminalnode):
 		for i_nodes in temp_g_nodes:
 			modify_probability(i_nodes[0],i_nodes[1],i_nodes[2])
 			
+			
+def get_program_tree_stack(terminalnode):
+	#print(terminalnode)
+	node_stack = []
+	all_nodes= [terminalnode]
+	while all_nodes:
+		for i,sourcenode in enumerate(all_nodes[0].links):
+			if str(sourcenode.program_expression['data']) =='iW().iS()':
+				None
+			else:
+				node_stack.append(get_node_name(sourcenode))
+				all_nodes.append(sourcenode)
+		all_nodes.pop(0)
+	return(node_stack)
+	
+def get_total_child_probability(childnode):
+	child_node_name = get_node_name(childnode)
+	tot_probability = 1
+	probability_list = []
+	for i,v in enumerate(childnode.links):
+		i_probability = [i_prob['init_probability'] for i_prob in v.child_node_init_probability if i_prob['link']==i and i_prob['node_name']==child_node_name][0]
+		probability_list.append(i_probability)
+		tot_probability *= i_probability
+	return (probability_list,tot_probability)
+	
+def match_subprograms(search_graph,terminalnode,match_depth):
+	program_node_stack = get_program_tree_stack(terminalnode)
+	same_nodes = [i for i in search_graph.nodes if get_node_name(terminalnode) == get_node_name(i) and i.executed == 1 and i.equivalent_prog == 0 and i != terminalnode and i != search_graph.nodes[0] ]
+	prev_same_node_stack_len = 0
+	same_node = None
+	match_len = 0
+	init_probability_list,child_probablity = get_total_child_probability(terminalnode)
+	probability_list = init_probability_list
+	for i_nodes in same_nodes:
+		maybe_same_program_node_stack = get_program_tree_stack(i_nodes)
+		iter_len = min(len(maybe_same_program_node_stack),len(program_node_stack),match_depth)
+		
+		for j in range(0,iter_len):
+			if (j == iter_len or program_node_stack[j] !=  maybe_same_program_node_stack[j]):
+				if j==match_len and j>0:
+					same_child_probability_list,same_child_node_probability = get_total_child_probability(i_nodes)
+					if same_child_node_probability > child_probablity:
+						match_len = j
+						same_node = i_nodes
+						child_probablity = same_child_node_probability
+						probability_list = same_child_probability_list
+				elif j>match_len:
+					match_len = j
+					same_node = i_nodes
+					probability_list,child_probablity = get_total_child_probability(i_nodes)
+				break
+			
+	return same_node,[j-i for i,j in zip(init_probability_list,probability_list)]
+				
+				

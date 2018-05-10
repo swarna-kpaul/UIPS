@@ -73,7 +73,7 @@ def get_program_expression(node_name,terminalnode,node_output):
 			current_expression = {'data':symbols(new_world), 'world': new_world}
 	elif 'actuator' in node_name:
 		parent_expression = terminalnode.links[0].program_expression
-		new_world = parent_expression['world'] + 'X'+str(parent_expression['data'])+'.A()'
+		new_world = '{{'+parent_expression['world'] + '}X{'+str(parent_expression['data'])+'}}.A()'
 		current_expression = {'data':None, 'world': new_world}
 	elif node_name == 'identity':
 		parent_expression = terminalnode.links[0].program_expression
@@ -106,8 +106,8 @@ def get_program_expression(node_name,terminalnode,node_output):
 				best_world = parent_expression3['world']
 			current_expression = {'data':parent_expression3['data'],'world':best_world}
 		else:
-			best_world = parent_expression1['world']+'.sum.'+ parent_expression2['world']+'.sum.'+ parent_expression3['world']
-			current_expression = {'data':symbols('('+str(parent_expression2['data'])+'.sum.'+str(parent_expression3['data'])+').'+ str(parent_expression1['data'])),'world':best_world}
+			best_world = '{'+parent_expression1['world']+'}.sum.{'+ parent_expression2['world']+'}.sum.{'+ parent_expression3['world']+'}'
+			current_expression = {'data':symbols('{{'+str(parent_expression2['data'])+'}X{'+str(parent_expression3['data'])+'}}.{'+ str(parent_expression1['data'])+'}?'),'world':best_world}
 			
 	elif node_name == 'lambdagraph':
 		parent_expression = str(terminalnode.links[0].program_expression['data'])
@@ -131,7 +131,7 @@ def get_program_expression(node_name,terminalnode,node_output):
 		if 'iW()' not in str(parent_expression1['data']) and 'iW()' not in str(parent_expression2['data']) and 'iW()' not in str(parent_expression3['data']): # all three inputs doesn't have any side effects
 			current_expression = {'data':node_output,'world':best_world}
 		else: # some inputs have effects
-			current_data = symbols('('+str(parent_expression1['data'])+'X'+str(parent_expression2['data'])+'X'+str(parent_expression3['data'])+').recurse()')
+			current_data = symbols('{{'+str(parent_expression1['data'])+'}X{'+str(parent_expression2['data'])+'}X{'+str(parent_expression3['data'])+'}}.recurse()')
 			best_world +='.'+(str(current_data))
 			current_expression = {'data':current_data,'world':best_world}
 	elif node_name == 'apply':
@@ -144,7 +144,7 @@ def get_program_expression(node_name,terminalnode,node_output):
 			best_world = parent_expression2['world']
 		else:
 			best_world = parent_expression3['world']
-		current_data = symbols('('+str(parent_expression2['data'])+'X'+str(parent_expression3['data'])+').'+str(parent_expression1['data']))
+		current_data = symbols('{{'+str(parent_expression2['data'])+'}X{'+str(parent_expression3['data'])+'}}.{'+str(parent_expression1['data']))+'}'
 		current_expression = {'data':current_data,'world':best_world}
 	
 	elif node_name == 'head':
@@ -152,13 +152,13 @@ def get_program_expression(node_name,terminalnode,node_output):
 		if isinstance(parent_expression1['data'],list):
 			current_expression = {'data':node_output,'world':parent_expression1['world']}
 		else:
-			current_expression = {'data':symbols('('+str(parent_expression1['data'])+').head()'),'world':parent_expression1['world']}
+			current_expression = {'data':symbols('{'+str(parent_expression1['data'])+'}.head()'),'world':parent_expression1['world']}
 	elif node_name == 'tail':
 		parent_expression1 = terminalnode.links[0].program_expression
 		if isinstance(parent_expression1['data'],list):
 			current_expression = {'data':node_output,'world':parent_expression1['world']}
 		else:
-			current_expression = {'data':symbols('('+str(parent_expression1['data'])+').tail()'),'world':parent_expression1['world']}
+			current_expression = {'data':symbols('{'+str(parent_expression1['data'])+'}.tail()'),'world':parent_expression1['world']}
 	elif node_name == 'cons':
 		parent_expression1 = terminalnode.links[0].program_expression
 		parent_expression2 = terminalnode.links[1].program_expression
@@ -169,7 +169,7 @@ def get_program_expression(node_name,terminalnode,node_output):
 		if ('sympy.core' not in str(type(parent_expression1['data'])) and 'sympy.core' not in str(type(parent_expression2['data']))):
 			current_expression = {'data':node_output,'world':best_world}
 		else:
-			current_expression = {'data':symbols('('+str(parent_expression1['data'])+'X'+str(parent_expression2['data'])+').cons()'),'world':best_world}
+			current_expression = {'data':symbols('{{'+str(parent_expression1['data'])+'}X{'+str(parent_expression2['data'])+'}}.cons()'),'world':best_world}
 		
 	elif node_name == 'nil':
 		current_expression = {'data':[],'world':terminalnode.links[0].program_expression['world']}
