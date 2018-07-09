@@ -1,3 +1,16 @@
+from functools import reduce
+
+def modify_probability(child_node_name_link_pair,del_probability,parent_node):
+		##### adjust other child node probabilities
+	#target_node_name = child_node_probability_dict['node_name']
+	divide_factor = len(parent_node.child_node_init_probability) - 1
+	for k,v in enumerate(parent_node.child_node_init_probability):
+		if v['node_name'] == child_node_name_link_pair[0] and v['link'] == child_node_name_link_pair[1]:
+			parent_node.child_node_init_probability[k]['init_probability'] += del_probability
+		else:
+			parent_node.child_node_init_probability[k]['init_probability'] -= del_probability*parent_node.child_node_init_probability[k]['init_probability']#del_probability/divide_factor
+
+
 def calculate_trailing_probability(factored_program_probability,current_edge_node_labels):
 	next_edge = [(k,v) for k,v in factored_program_probability.items() if  k.split('-')[0] == current_edge_node_labels[1]]
 	if next_edge: #### next_edge is not empty
@@ -7,15 +20,20 @@ def calculate_trailing_probability(factored_program_probability,current_edge_nod
 		return calculate_trailing_probability(factored_program_probability,current_edge_node_labels) *curr_edge_probability 
 	else:
 		return 1
-
+		
 
 def calculate_delta_probability(factored_program_probability,sourcenode,terminalnode,reward):
 	delta_probability = 1
-	alpha = 0.3
+	alpha = 0.5
 	current_edge = [(k,v) for k,v in factored_program_probability.items() if  k == str(sourcenode.label)+'-'+str(terminalnode.label)][0]
 	current_edge_node_labels = current_edge[0].split('-')
 	current_probability_mass = current_edge[1]['init_probability']
-	delta_probability = calculate_trailing_probability(factored_program_probability,current_edge_node_labels)	
+	
+	total_program_probability = reduce((lambda x, y: x * y), [v['init_probability'] for k,v in factored_program_probability.items()])
+	program_probability_sourcenode = reduce((lambda x, y: x * y), [v['init_probability'] for k,v in sourcenode.factored_program_probability.items()])
+		
+	#delta_probability = calculate_trailing_probability(factored_program_probability,current_edge_node_labels)	
+	delta_probability = total_program_probability/(program_probability_sourcenode*current_probability_mass)
 	
 	if reward > 0:
 		delta_probability *= alpha*reward*(1-current_probability_mass)
@@ -42,7 +60,7 @@ def update_probability(terminalnode):
 		# Recursively fetch all parent nodes
 			for i,sourcenode in enumerate(terminalnode.links):
 				#print (sourcenode)
-				if type(sourcenode).__name__=='world': ### terminalnode initialnode
+				if type(sourcenode).__name__=='initWorld': ### terminalnode initialnode
 					None
 				elif len(sourcenode.links) == 0 and sourcenode.no_of_arguments >0: ######### sourcenode initialnode
 					###### calculate delta probability

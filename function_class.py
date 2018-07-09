@@ -1,30 +1,34 @@
 ## Classes of primitive functions
-#global time_limit 
-#global node_label
-time_limit = 1
-node_label = 1
-#all_node_dict = {}
+import environment
+from program_expression import *
+import globalvars
+import copy
+
+########## Class for null type
 class null:
 	def __init__(self):
 		self.name=None
 		
 null=null()
 
+########### Class for time limit crossed exception
 class time_exception(Exception):
-	pass
+	pass	
 
+########### Node Super class for graph nodes
 class node:
 	def __init__(self,label,no_of_arguments,atype, inlinks):
-		global node_label
+		global globalvars
 		if not is_number(label):
 			raise Exception('Invalid node label')
 		self.label = label
 		self.no_of_arguments = no_of_arguments
 		self.atype = atype
 		self.links = inlinks
-		node_label = node_label + 1
+		globalvars.node_label = globalvars.node_label + 1
+		#print(globalvars.node_label)
 		self.world = None
-		self.world_version = None
+		self.world_version = 0
 		self.data = None
 		self.executed = 0
 		self.semantic_failed = 0
@@ -37,8 +41,8 @@ class node:
 		self.update_exp = 1
 		self.equivalent_prog =0
 		self.reward = 0
-	
-	
+		self.runtime=0
+		self.state = None
 	
 	@property
 	def links(self):
@@ -46,98 +50,6 @@ class node:
 	
 	@links.setter	
 	def links(self,inlinks):
-		#if len(links) <= self.no_of_arguments:
-		#print('test link')
-		########## Type checking
-		# def generic_type_check(self):
-			# input_atype=self.atype
-			# #print (inlinks)
-			# #print(input_atype)
-			# try:
-				# for i in range(min(self.no_of_arguments,len(inlinks))):
-					# node_input_type = input_atype['function']['input'][i]
-					# link_out_atype = inlinks[i].atype['function']['output'][0]
-					# #print(i)
-					# #print (link_out_atype)
-					# #print (node_input_type)
-					# if isinstance(node_input_type,dict) :
-		# # function or list type
-						# if isinstance(link_out_atype,dict):
-							# if 'function' in node_input_type and 'function' in link_out_atype:
-								# valid = 'ok'
-							# elif 'list' in node_input_type and 'list' in link_out_atype:
-								# if node_input_type['list'] == link_out_atype['list'] or link_out_atype['list'] == 'none' or node_input_type['list'] == 'some':
-									# valid = 'ok'
-								# else:
-									# raise Exception('Type Mismatch')
-							# else:
-								# raise Exception('Type Mismatch')
-						# elif link_out_atype == 'some':
-							# valid = 'ok'
-							# ## Update some link
-							# #print('ok')
-							# # inlinks[i].atype['function']['output'][0] = input_atype['function']['input'][i]
-							# # for j in range(len(inlinks[i].atype['function']['input'])):
-								# # if inlinks[i].atype['function']['input'][j] == 'some':
-									# # inlinks[i].atype['function']['input'][j] = input_atype['function']['input'][i]
-						# else:
-							# raise Exception('Type Mismatch')
-					# elif node_input_type == 'any':
-						# valid = 'ok'
-					# elif node_input_type == 'some':
-						# valid = 'ok'
-					# elif link_out_atype == 'some':
-						# valid = 'ok'
-						# # inlinks[i].atype['function']['output'][0] = input_atype['function']['input'][i]
-						# # for j in range(len(inlinks[i].atype['function']['input'])):
-							# # if inlinks[i].atype['function']['input'][j] == 'some':
-								# # inlinks[i].atype['function']['input'][j] = input_atype['function']['input'][i]
-					# elif not isinstance(link_out_atype,dict) and (link_out_atype == node_input_type ) :
-						# valid = 'ok'
-					# else:
-						# raise Exception('Type Mismatch')
-						
-				# node_input_type = input_atype['function']['input']
-				# temp_set = []
-				# print(self)
-				# print(inlinks)
-				# for i,val in enumerate(node_input_type):
-					# print(i)
-					# if i > len(inlinks)-1:
-						# break
-					# if val=='some':
-						# temp_set.append(inlinks[i].atype['function']['output'][0])
-				# ########## check for some type in list type
-					# if isinstance(val,dict) and 'list' in val:
-						# if val['list'] == 'some':
-							# temp_set.append(inlinks[i].atype['function']['output'][0]['list'])
-				# ############### check for some type in function type
-					# if isinstance(val,dict) and 'function' in val:
-						# if val['function'] == 'some':
-							# temp_set.append(inlinks[i].atype['function']['output'][0]['function'])
-						# elif 'input' in val['function']:
-							# if val['function']['input'][0] == 'some':
-								# temp_set.append(inlinks[i].atype['function']['output'][0]['function']['input'][0])
-							# if val['function']['output'][0] == 'some':
-								# temp_set.append(inlinks[i].atype['function']['output'][0]['function']['output'][0])
-				# #print(set(temp_set))
-				# try: 
-					# temp_set.remove('some')
-					# temp_set.remove('any')
-				# except:
-					# valid = 'ok'
-				# print(temp_set)
-				# if len(temp_set) <= 1:
-					# valid = 'ok'
-				# else:
-					# for j in temp_set:
-						# if j != temp_set[0]:
-							# raise Exception('Type Mismatch')
-						# else:
-							# return valid
-			# except:
-				# print('Type Mismatch')
-				# raise
 		def update_type(self):
 			if type(self).__name__=='head':
 				self.atype['function']['input'] = self.links[0].atype['function']['output']
@@ -151,16 +63,16 @@ class node:
 			elif type(self).__name__=='identity':
 				self.atype['function']['input'] = self.links[0].atype['function']['output']
 				self.atype['function']['output'] = self.links[0].atype['function']['output']
-		#generic_type_check(self)
 		self.__links = inlinks
 		if self.no_of_arguments <= len(inlinks):
 			update_type(self)
 		
 		
 	def funct(self):
-		global time_limit
-		time_limit = time_limit - 1
-		if time_limit < 1:
+		global globalvars
+		globalvars.time_limit = globalvars.time_limit - 1
+		globalvars.totalruntime += 1
+		if globalvars.time_limit < 1:
 			raise time_exception ('time over')
 			
 	def update_program_expression(self,node_name,node_output):
@@ -172,8 +84,28 @@ class node:
 				current_expression['data'] = False
 			self.program_expression = current_expression
 			#print(current_expression)
-
+		if self.world != None:
+			self.state = self.world.state
+			
+class initWorld(node):
+# Node function for initializing world
+	def __init__(self,label, *links):
+		#global globalvars
+		node.__init__(self,label,0,{'function':{'input':['null'],'output':['world']}},links)
+		super().update_program_expression('initWorld',self.data)
+		self.executed = 1
+		self.program_probability =1
+		self.factored_program_probability['0-'+str(label)]= {'node_name':'initWorld','link':0,'init_probability':1}
 		
+		
+	def funct(self):
+		super().funct()
+		if self.data == None:
+			self.data =  null
+			self.world = copy.deepcopy(environment.init_world)
+			self.world_version = self.world.version
+		return  {'data':self.data,'world':self.world}
+			
 class add(node):
 # Node object for addition function
 	def __init__(self,label, *links):
@@ -186,14 +118,15 @@ class add(node):
 			link2_in = self.links[1].funct()
 			self.data =  link1_in['data'] + link2_in['data']
 			self.world = link1_in['world']
-			self.world_version = self.world.version
+			#self.world_version = self.world.version
+			self.world_version = max(self.links[0].world_version,self.links[1].world_version)
 		super().update_program_expression('add',self.data)
 		return  {'data':self.data,'world':self.world}
 		
 class identity(node):
 # Node object for addition function
 	def __init__(self,label, *links):
-		node.__init__(self,label,1,{'function':{'input':['some'],'output':['some']}},links)
+		node.__init__(self,label,1,{'function':{'input':['any'],'output':['any']}},links)
 		
 	def funct(self):
 		super().funct()
@@ -201,7 +134,8 @@ class identity(node):
 			link1_in = self.links[0].funct()
 			self.data =  link1_in['data']
 			self.world = link1_in['world']
-			self.world_version = self.world.version
+			#self.world_version = self.world.version
+			self.world_version = self.links[0].world_version
 			super().update_program_expression('identity',self.data)
 		return {'data':copy.deepcopy(self.data),'world':self.world}
 		
@@ -245,7 +179,8 @@ class constant(node):
 			link1_in = self.links[0].funct()
 			self.data = self.K
 			self.world = link1_in['world']
-			self.world_version = self.world.version
+			#self.world_version = self.world.version
+			self.world_version = self.links[0].world_version
 			super().update_program_expression('constant',self.data)
 		return {'data':copy.deepcopy(self.data),'world':self.world}
 
@@ -261,7 +196,8 @@ class subtract(node):
 			link2_in = self.links[1].funct()
 			self.data =  link1_in['data'] - link2_in['data']
 			self.world = link1_in['world']
-			self.world_version = self.world.version
+			#self.world_version = self.world.version
+			self.world_version = max(self.links[0].world_version,self.links[1].world_version)
 			super().update_program_expression('subtract',self.data)
 		return  {'data':self.data,'world':self.world}
 
@@ -277,7 +213,8 @@ class multiply(node):
 			link2_in = self.links[1].funct()
 			self.data =  link1_in['data'] * link2_in['data']
 			self.world = link1_in['world']
-			self.world_version = self.world.version
+			#self.world_version = self.world.version
+			self.world_version = max(self.links[0].world_version,self.links[1].world_version)
 			super().update_program_expression('multiply',self.data)
 		return  {'data':self.data,'world':self.world}
 		
@@ -294,13 +231,14 @@ class divide(node):
 			link2_in = self.links[1].funct()
 			self.data =  link1_in['data'] / link2_in['data']
 			self.world = link1_in['world']
-			self.world_version = self.world.version
+			#self.world_version = self.world.version
+			self.world_version = max(self.links[0].world_version,self.links[1].world_version)
 			super().update_program_expression('divide',self.data)
 		return  {'data':self.data,'world':self.world}
 
 class gaurd(node):
 	def __init__(self,label, *links):
-		node.__init__(self,label,3,{'function':{'input':['boolean','some','some'],'output':['some']}},links)
+		node.__init__(self,label,3,{'function':{'input':['boolean','any','any'],'output':['any']}},links)
 		
 	def funct(self):
 		super().funct()
@@ -313,23 +251,23 @@ class gaurd(node):
 				link2_in = self.links[1].funct()
 				self.data =  link2_in['data']
 				self.world = link2_in['world']
-				self.world_version = self.world.version
+				#self.world_version = self.world.version
+				self.world_version = max(self.links[0].world_version,self.links[1].world_version)
 			elif link1_in['data'] == False:
 				link3_in = self.links[2].funct()
 				self.data =  link3_in['data']
 				self.world = link3_in['world']
-				self.world_version = self.world.version
+				#self.world_version = self.world.version
+				self.world_version = max(self.links[0].world_version,self.links[2].world_version)
 			super().update_program_expression('gaurd',self.data)
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
-
 
 class equal(node):
 # Node class for divide function
 	def __init__(self,label, *links):
-		node.__init__(self,label,2,{'function':{'input':['some','some'],'output':['boolean']}},links)
+		node.__init__(self,label,2,{'function':{'input':['any','any'],'output':['boolean']}},links)
 		
 	def funct(self):
-		global node_label
 		super().funct()
 		if self.data == None:
 			link1_in = self.links[0].funct()
@@ -337,14 +275,14 @@ class equal(node):
 			if link1_in['data'] == link2_in['data']:
 				self.data =  True
 				self.world = link1_in['world']
-				self.world_version = self.world.version
+				#self.world_version = self.world.version
 			else:
 				self.data =  False
 				self.world = link1_in['world']
-				self.world_version = self.world.version
+				#self.world_version = self.world.version
+			self.world_version = max(self.links[0].world_version,self.links[1].world_version)
 			super().update_program_expression('equal',self.data)
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
-
 
 class greater(node):
 # Node class for divide function
@@ -352,7 +290,6 @@ class greater(node):
 		node.__init__(self,label,2,{'function':{'input':['number','number'],'output':['boolean']}},links)
 		
 	def funct(self):
-		global node_label
 		super().funct()
 		if self.data == None:
 			link1_in = self.links[0].funct()
@@ -360,36 +297,15 @@ class greater(node):
 			if link1_in['data'] > link2_in['data']:
 				self.data =  True
 				self.world = link1_in['world']
-				self.world_version = self.world.version
+				#self.world_version = self.world.version
 			else:
 				self.data =  False
 				self.world = link1_in['world']
-				self.world_version = self.world.version
+				#self.world_version = self.world.version
+			self.world_version = max(self.links[0].world_version,self.links[1].world_version)
 			super().update_program_expression('greater',self.data)
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
 			
-class lesser(node):
-
-# Node class for divide function
-	def __init__(self,label, *links):
-		node.__init__(self,label,2,{'function':{'input':['number','number'],'output':['boolean']}},links)
-		
-	def funct(self):
-		global node_label
-		super().funct()
-		if self.data == None:
-			link1_in = self.links[0].funct()
-			link2_in = self.links[1].funct()
-			if link1_in['data'] < link2_in['data']:
-				self.data =  True
-				self.world = link1_in['world']
-				self.world_version = self.world.version
-			else:
-				self.data =  False
-				self.world = link1_in['world']
-				self.world_version = self.world.version
-		return  {'data':copy.deepcopy(self.data),'world':self.world}
-
 class conjunct(node):
 
 # Node class for divide function
@@ -397,7 +313,6 @@ class conjunct(node):
 		node.__init__(self,label,2,{'function':{'input':['boolean','boolean'],'output':['boolean']}},links)
 		
 	def funct(self):
-		global node_label
 		super().funct()
 		if self.data == None:
 			link1_in = self.links[0].funct()
@@ -405,11 +320,12 @@ class conjunct(node):
 			if link1_in['data'] and link2_in['data']:
 				self.data =  True
 				self.world = link1_in['world']
-				self.world_version = self.world.version
+				#self.world_version = self.world.version
 			else:
 				self.data =  False
 				self.world = link1_in['world']
-				self.world_version = self.world.version
+				#self.world_version = self.world.version
+			self.world_version = max(self.links[0].world_version,self.links[1].world_version)
 			super().update_program_expression('conjunct',self.data)
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
 			
@@ -420,7 +336,6 @@ class disjunct(node):
 		node.__init__(self,label,2,{'function':{'input':['boolean','boolean'],'output':['boolean']}},links)
 		
 	def funct(self):
-		global node_label
 		super().funct()
 		if self.data == None:
 			link1_in = self.links[0].funct()
@@ -428,11 +343,12 @@ class disjunct(node):
 			if link1_in['data'] or link2_in['data']:
 				self.data =  True
 				self.world = link1_in['world']
-				self.world_version = self.world.version
+				#self.world_version = self.world.version
 			else:
 				self.data =  False
 				self.world = link1_in['world']
-				self.world_version = self.world.version
+				#self.world_version = self.world.version
+			self.world_version = max(self.links[0].world_version,self.links[1].world_version)
 			super().update_program_expression('disjunct',self.data)
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
 			
@@ -443,13 +359,13 @@ class negate(node):
 		node.__init__(self,label,1,{'function':{'input':['boolean'],'output':['boolean']}},links)
 		
 	def funct(self):
-		global node_label
 		super().funct()
 		if self.data == None:
 			link1_in = self.links[0].funct()
 			self.data =  not link1_in['data']
 			self.world = link1_in['world']
-			self.world_version = self.world.version
+			#self.world_version = self.world.version
+			self.world_version = self.links[0].world_version
 			super().update_program_expression('negate',self.data)
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
 			
@@ -457,7 +373,7 @@ class head(node):
 
 # Node class for head function
 	def __init__(self,label, *links):
-		node.__init__(self,label,1,{'function':{'input':[{'list':'some'}],'output':['some']}},links)
+		node.__init__(self,label,1,{'function':{'input':[{'list':'any'}],'output':['any']}},links)
 		
 	def funct(self):
 		super().funct()
@@ -471,14 +387,14 @@ class head(node):
 			except IndexError: 
 				self.data = null
 			self.world = link1_in['world']
-			self.world_version = self.world.version
+			#self.world_version = self.world.version
+			self.world_version = self.links[0].world_version
 			super().update_program_expression('head',self.data)
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
-		
 
 class tail(node):
 	def __init__(self,label, *links):
-		node.__init__(self,label,1,{'function':{'input':[{'list':'some'}],'output':[{'list':'some'}]}},links)
+		node.__init__(self,label,1,{'function':{'input':[{'list':'any'}],'output':[{'list':'any'}]}},links)
 		
 	def funct(self):
 		super().funct()
@@ -490,15 +406,15 @@ class tail(node):
 				raise Exception ('Invalid Input Type tail')
 			self.data = temp_list[1:len(temp_list)]
 			self.world = link1_in['world']
-			self.world_version = self.world.version
+			#self.world_version = self.world.version
+			self.world_version = self.links[0].world_version
 			super().update_program_expression('tail',self.data)
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
 
-		
 class cons(node):
 # Node class for head function
 	def __init__(self,label, *links):
-		node.__init__(self,label,2,{'function':{'input':[{'list':'some'},'some'],'output':[{'list':'some'}]}},links)
+		node.__init__(self,label,2,{'function':{'input':[{'list':'any'},'any'],'output':[{'list':'any'}]}},links)
 		
 	def funct(self):
 		super().funct()
@@ -509,11 +425,11 @@ class cons(node):
 			link2_in = self.links[1].funct()
 			self.data = link1_in['data'].append(link2_in['data'])
 			self.world = link1_in['world']
-			self.world_version = self.world.version
+			#self.world_version = self.world.version
+			self.world_version = max(self.links[0].world_version,self.links[1].world_version)
 			super().update_program_expression('cons',self.data)
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
 
-		
 class nil(node):
 	def __init__(self,label,*links):
 		node.__init__(self,label,1,{'function':{'input':['any'],'output':[{'list':'null'}]}},links)
@@ -523,38 +439,20 @@ class nil(node):
 			link1_in = self.links[0].funct()
 			self.data = []
 			self.world = link1_in['world']
-			self.world_version = self.world.version
+			#self.world_version = self.world.version
+			self.world_version = self.links[0].world_version
 			super().update_program_expression('nil',self.data)
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
 
-		
-def is_number(n):
-    try:
-        float(n)   # Type-casting the string to `float`.
-                   # If string is not a valid `float`, 
-                   # it'll raise `ValueError` exception
-    except:
-        return False
-    return True
 
-def is_char(n):
-    try:
-        n.isalpha()   # Type-casting the string to `float`.
-                   # If string is not a valid `float`, 
-                   # it'll raise `ValueError` exception
-    except:
-        return False
-    return True
-	
 ###################### Higher order functions
 class apply(node):
 
 # Node class for apply function
 	def __init__(self,label, *links):
-		node.__init__(self,label,3,{'function':{'input':[{'function':{'input':['any'],'output':['any']}},'any','any'],'output':['some']}},links)
+		node.__init__(self,label,3,{'function':{'input':['function','any','any'],'output':['any']}},links)
 		
 	def funct(self):
-		global node_label
 		super().funct()
 		
 		if self.data == None:
@@ -564,6 +462,7 @@ class apply(node):
 			if isinstance(input_funct,Graph):
 				if len(input_funct.atype['function']['input']) <= len(input_funct.glinks)+2 :
 			# number of input arguments satisfied
+					
 					input_funct.glinks += self.links[1:3]
 					index = 0
 					for initnode in input_funct.initialnodes:
@@ -579,7 +478,8 @@ class apply(node):
 					output = input_funct.terminalnodes[0].funct()
 					self.data = output['data']
 					self.world = output['world']
-					self.world_version = self.world.version
+					#self.world_version = self.world.version
+					self.world_version = input_funct.terminalnodes[0].world_version
 					self.program_expression = input_funct.terminalnodes[0].program_expression
 				else:
 					input_funct.glinks += self.links[1:3]
@@ -587,6 +487,8 @@ class apply(node):
 					temp_atpye['function']['input'] = temp_atpye['function']['input'][2:len(temp_atpye['function']['input'])]
 					self.atype['function']['output'][0] = temp_atpye
 					self.data =  input_funct
+					self.world = self.links[0].world
+					self.world_version = max(self.links[0].world_version,self.links[1].world_version,self.links[2].world_version)
 					if self.links[0].program_expression != None:
 						super().update_program_expression('apply',self.data)
 			elif isinstance(input_funct,node):
@@ -596,7 +498,7 @@ class apply(node):
 					output =  input_funct.funct()
 					self.data = output['data']
 					self.world = output['world']
-					self.world_version = self.world.version
+					self.world_version = input_funct.world.version
 					self.program_expression = input_funct.program_expression
 				else:
 		#### Return Partial function
@@ -605,6 +507,8 @@ class apply(node):
 					temp_atpye['function']['input'] = temp_atpye['function']['input'][2:len(temp_atpye['function']['input'])]
 					self.atype['function']['output'][0] = temp_atpye
 					self.data = input_funct
+					self.world = self.links[0].world
+					self.world_version = max(self.links[0].world_version,self.links[1].world_version,self.links[2].world_version)
 					super().update_program_expression('apply',self.data)
 			else:
 				raise Exception('invalid input type')
@@ -623,48 +527,52 @@ class recurse(node):
 					# raise Exception('Type Mismatch')
 		# except:
 			# raise Exception('Type Mismatch')
-		node.__init__(self,label,3,{'function':{'input':[{'function':{'input':['some'],'output':['some']}},{'function':{'input':['some'],'output':['boolean']}},'some'],'output':['some']}},links)
+		node.__init__(self,label,3,{'function':{'input':['function','function','any'],'output':['any']}},links)
 		
 		
 	def funct(self):
-		global node_label
+		global globalvars
 		#print(str(self.links[1].program_expression['data']))
 		super().funct()
 		node_list_dict ={}
 		if self.data == None:
-			self.g = Graph(graph_label)
-			node_list_dict[7] = identity(node_label) #7
-			node_list_dict[6] = identity(node_label) #6
-			node_list_dict[5] = identity(node_label)	#5
-			node_list_dict[4] = apply(node_label)	#4
-			node_list_dict[3] = apply(node_label)	#3
-			node_list_dict[2] = gaurd(node_label)	#2
-			node_list_dict[1] = recurse(node_label)	#1
+			self.g = Graph(globalvars.graph_label)
+			node_list_dict[1] = identity(globalvars.node_label) #1
+			node_list_dict[2] = identity(globalvars.node_label) #2
+			node_list_dict[3] = identity(globalvars.node_label)	#3
+			node_list_dict[4] = apply(globalvars.node_label)	#4
+			node_list_dict[5] = gaurd(globalvars.node_label)	#5
+			node_list_dict[6] = apply(globalvars.node_label)	#6
+			node_list_dict[7] = recurse(globalvars.node_label)	#7
+			node_list_dict[8] = gaurd(globalvars.node_label)	#8
+			
 			for node_i in node_list_dict.values():
 				node_i.update_exp = 0
-			self.g.add_node(node_list_dict[7])
-			self.g.add_node(node_list_dict[6])
-			self.g.add_node(node_list_dict[5])
-			self.g.add_node(node_list_dict[4],node_list_dict[6],node_list_dict[5],node_list_dict[5])
-			self.g.add_node(node_list_dict[3],node_list_dict[7],node_list_dict[5],node_list_dict[5])
-			self.g.add_node(node_list_dict[1],node_list_dict[7],node_list_dict[6],node_list_dict[3])
-			self.g.add_node(node_list_dict[2],node_list_dict[4],node_list_dict[5],node_list_dict[1])
+			self.g.add_node(node_list_dict[1])
+			self.g.add_node(node_list_dict[2])
+			self.g.add_node(node_list_dict[3])
+			self.g.add_node(node_list_dict[4],node_list_dict[2],node_list_dict[3],node_list_dict[3])
+			self.g.add_node(node_list_dict[5],node_list_dict[4],node_list_dict[3],node_list_dict[3])
+			self.g.add_node(node_list_dict[6],node_list_dict[1],node_list_dict[5],node_list_dict[5])
+			self.g.add_node(node_list_dict[7],node_list_dict[1],node_list_dict[2],node_list_dict[6])
+			self.g.add_node(node_list_dict[8],node_list_dict[4],node_list_dict[3],node_list_dict[7])
 			self.g.glinks = self.links
 		#print(self.links)
 			for i in range(len(self.links)): 
 				self.g.initialnodes[i].links = (self.links[i],)
 			#print(self.g.terminalnodes[0].update_exp)
+			#globalvars.recurse_temp_obj.append(self.g.nodes)
 			output = self.g.terminalnodes[0].funct()
 			self.data = output['data']
 			self.world = output['world']
+			#self.program_expression = self.g.terminalnodes[0].program_expression
 			#print('ok')
 			super().update_program_expression('recurse',self.data)
 			# cleanup memory
 			del(node_list_dict)
 			del(output)
-			self.world_version = self.world.version
+			self.world_version = self.g.terminalnodes[0].world_version #self.world.version
 		return  {'data':copy.deepcopy(self.data),'world':self.world}
-			
 			
 class sensor(node):
 	def __init__(self,label,out_type, *links):
@@ -700,13 +608,15 @@ class actuator(node):
 			prev_version = self.links[0].world_version
 			temp_world.upgrade()
 			if temp_world.version != prev_version + 1:
+				#print(temp_world.version)
+				#print(prev_version)
 				raise Exception("Invalid sequence of actuator")
 			self.data = null
 			self.world = temp_world
 			# Cleanup memory
 			self.world_version = self.world.version
 			super().update_program_expression('actuator',self.data)
-		return {'world':self.world}
+		return {'data':self.data,'world':self.world}
 		
 class goalchecker(node):
 	def __init__(self,label, *links):
@@ -727,40 +637,39 @@ class goalchecker(node):
 			super().update_program_expression('goalchecker',self.data)
 		return {'data':self.data, 'world':self.world}
 		
-
 class lambdagraph(node):
 	def __init__(self,label, *links):
-		node.__init__(self,label,1,{'function':{'input':['any'],'output':[{'function':{'input':['any'],'output':['any']}}]}},links)
+		node.__init__(self,label,1,{'function':{'input':['any'],'output':['function']}},links)
 		
 	def funct(self):
-		super().funct()
+	########### execute lambdagraph function ####################################
+		super().funct() ################## consume one unit of time
 		if self.data == None:
+		################# If node is not pre-executed then execute it and memoize the result
 			_terminalnode=self.links[0]
-			global graph_label
-			global node_label
-			global call_cnt
-			tempinitnodes = identity(node_label)
+			global globalvars
+			tempinitnodes = identity(globalvars.node_label)
 			tempinitnodes.update_exp = 0
-			temp_g = Graph(graph_label)
+			temp_g = Graph(globalvars.graph_label)
 			temp_g.terminalnodes = [_terminalnode]
 			init_world = None
-			call_cnt =0
+			globalvars.call_cnt =0
 			def graph_return_nodes(self,temp_g,terminalnode):
-				global call_cnt
+				global globalvars
 				linknodes = ()
 				super().funct()
 			# Recursively fetch all parent nodes
 				for i,sourcenode in enumerate(terminalnode.links):
 					#print (sourcenode)
-					if isinstance(sourcenode,world): ### terminalnode initialnode
+					if isinstance(sourcenode,initWorld): ### terminalnode initialnode
 						temp_g.initialnodes.append(terminalnode)
 					elif len(sourcenode.links) == 0 and sourcenode.no_of_arguments >0: ######### sourcenode initialnode
 						temp_g.initialnodes.append(sourcenode)
 						graph_return_nodes(self,temp_g,sourcenode)
-						call_cnt +=1
+						globalvars.call_cnt +=1
 					else:
 						graph_return_nodes(self,temp_g,sourcenode)
-						call_cnt += 1
+						globalvars.call_cnt += 1
 
 			##print(linknodes)
 			#print(terminalnode)
@@ -769,29 +678,30 @@ class lambdagraph(node):
 			#return terminalnode
 		
 			graph_return_nodes(self,temp_g,_terminalnode)
-			if call_cnt >100:
-				print(_terminalnode,call_cnt)
+			if globalvars.call_cnt >100:
+				print(_terminalnode,globalvars.call_cnt)
 			temp_g.initialnodes = list(set(temp_g.initialnodes))
 			temp_g.nodes = list(set(temp_g.nodes))
 			temp_node_label=[]
 			for tempnode in temp_g.initialnodes:
+			########## reorder the initial nodes ###############
 				temp_node_label.append(tempnode.label)
 			sorted_node_label_idx = sorted(range(len(temp_node_label)),key=temp_node_label.__getitem__)
 			temp_g.initialnodes =[temp_g.initialnodes[j] for j in sorted_node_label_idx]
 			temp_g = copy.deepcopy(temp_g)
-			for i in temp_g.nodes:
+			for i in temp_g.nodes: 
+			######## reset all the nodes
 				i.world = None
 				i.data = None
 				i.version = None
 				i.update_exp = 0
-		#self.atype['function']['output'] = 
-			temp_g.atype['function']['output'][0] = _terminalnode.atype
+			temp_g.atype['function']['output'][0] = _terminalnode.atype['function']['output'][0]
 		
 		##### Find all initial sensor nodes
 			temp_nodes = temp_g.nodes
 			for i_nodes in temp_g.nodes:
 				if isinstance(i_nodes,sensor):
-					if isinstance(i_nodes.links[0],world):
+					if isinstance(i_nodes.links[0],initWorld):
 						init_world = i_nodes.links[0]
 						temp_nodes.remove(i_nodes)
 					######## Change child nodes pointer to initial identity node
@@ -817,14 +727,166 @@ class lambdagraph(node):
 			temp_g.nodes = temp_nodes
 			temp_g.nodes.append(tempinitnodes)
 			temp_g.initialnodes.append(tempinitnodes)
-			self.world = init_world
-			self.world_version = self.world.version
+			self.world = init_world.funct()['world']
+			#self.world_version = self.world.version
+			self.world_version  = 0
 			#self.world =None
 			super().update_program_expression('lambdagraph','null')
 			self.data = temp_g
-		return {'data':copy.deepcopy(self.data),'world':self.world}
+			self.atype['function']['output'][0]=temp_g.atype
+		ret_data = copy.deepcopy(self.data)
+		#globalvars.lambda_temp_obj += ret_data.nodes
+		return {'data':ret_data,'world':self.world}
 		
+
+
+
+########### Class for Graph object ###################################
+class Graph:
+	def __init__(self,label,*options):
+		global globalvars
+		self.label = label
+		self.nodes = []
+		self.terminalnodes = []
+		self.initialnodes = []
+		self.atype = {'function':{'input':['none'],'output':['none']}}
+		self.glinks = ()
+		if len(options)>0:
+			self.delterminalnodes = options[0]
+		else:
+			self.delterminalnodes = 1
+		globalvars.graph_label += 1
+			
+	def add_node(self, innode,*links):
+	############# Add a new node in the graph object and connect it with existing nodes of the graph ################################
+		if len(links) == 0: #and innode.no_of_arguments > 0:
+			self.initialnodes.append(innode)
+			self.atype['function']['input'] += innode.atype['function']['input']
+		else:
+			innode.links = links
+			# Remove non terminal nodes
+			if self.delterminalnodes == 1:
+				for item in links:
+					try:
+						self.terminalnodes.remove(item)
+					except:
+						valid = 'ok'
+								
+		self.terminalnodes.append(innode)
+		self.nodes.append(innode)
 		
+	def cleanup_terminalnodes(self,terminalnode_indices):
+	################ Remove nodes from graph object ###############################
+		for item in sorted(terminalnode_indices,reverse=True):
+			self.terminalnodes.pop(item)
 		
+	
+	def return_subgraph(self, _terminalnode):
+	################ Return a subgraph with terminal node as _terminalnode from the graph object ######################
+		global globalvars
+
+		#global node_label
+		temp_g = Graph(globalvars.graph_label)
+		temp_g.terminalnodes = [_terminalnode]
+		#new_init_world = copy.deepcopy(init_world)
 		
+		def graph_return_nodes(self,temp_g,terminalnode):
+		############## Recursively fetch all parent nodes of terminalnode from the graph object #############################
+			linknodes = ()
+		# Recursively fetch all parent nodes
+			for i,sourcenode in enumerate(terminalnode.links):
+				#print (sourcenode)
+				if type(sourcenode).__name__=='initWorld': ### terminalnode initialnode
+					temp_g.initialnodes.append(sourcenode)
+					temp_g.nodes.append(sourcenode)
+				elif len(sourcenode.links) == 0 and sourcenode.no_of_arguments >0: ######### sourcenode initialnode
+					temp_g.initialnodes.append(sourcenode)
+					graph_return_nodes(self,temp_g,sourcenode)
+				else:
+					graph_return_nodes(self,temp_g,sourcenode)
+
+			temp_g.nodes.append(terminalnode)
+			return temp_g
+			#print(linknodes)
+			#return terminalnode
 		
+		temp_g = graph_return_nodes(self,temp_g,_terminalnode)
+		temp_g.initialnodes = list(set(temp_g.initialnodes))
+
+		temp_g.nodes = list(set(temp_g.nodes))
+		temp_node_label=[]
+		if len(temp_g.initialnodes) >1:
+			for tempnode in temp_g.initialnodes:
+				temp_node_label.append(tempnode.label)
+			sorted_node_label_idx = sorted(range(len(temp_node_label)),key=temp_node_label.__getitem__)
+			temp_g.initialnodes =[temp_g.initialnodes[j] for j in sorted_node_label_idx]
+		temp_g = copy.deepcopy(temp_g)
+		
+		#### set a copy of init world for initial nodes
+		for initnode in temp_g.initialnodes:
+			initnode_link_list = list(initnode.links)
+			for i,sourcenode in enumerate(initnode.links):
+				if type(sourcenode).__name__=='world': 
+					initnode_link_list[i]=new_init_world
+			initnode.links = tuple(initnode_link_list)
+					
+		for i in temp_g.nodes:
+			i.world = None
+			i.data = None
+			i.version = None
+		
+		temp_g.atype['function']['output'][0] = _terminalnode.atype
+		
+		return temp_g
+	
+	
+	def eval_graph(self):
+	# evaluate a graph function
+		if len(self.terminalnodes) == 1:
+			return self.terminalnodes[0].funct()
+		else:
+			raise Exception('Unable to evaluate graph')
+			
+			
+########## Functions for construction and evaluation of program graphs ###############################
+def initGraph(label):
+########## Initialize or create a new graph object #######################
+	global globalvars
+	globalvars.graph_objects[label] = Graph(label)
+	return globalvars.graph_objects[label]
+	
+def addNode(graphlabel,node,*inputlinks):
+########## Add a node in the graph object ################################
+	global globalvars
+	graph = globalvars.graph_objects[graphlabel]
+	#print(inputlinks)
+	inputlinks = tuple([ globalvars.node_objects[nodelabel] for nodelabel in inputlinks])
+	graph.add_node(node,*inputlinks)
+	
+def Node(label,*functionarglist):
+########## Create a new functional node #####################################
+	global globalvars
+	#print(functionarglist)
+	if len(functionarglist) > 1:
+		if is_char(functionarglist[1]):
+			cmd = functionarglist[0] +"("+str(label)+",\'"+	functionarglist[1] + "\')"
+		elif isinstance(functionarglist[1],node):
+			node_obj = functionarglist[1]
+			cmd = functionarglist[0] +"("+str(label)+",node_obj)"
+		else:
+			cmd = functionarglist[0] +"("+str(label)+","+ str(functionarglist[1]) + ")"
+	else:
+		cmd = functionarglist[0]+"("+str(label)+")"
+	globalvars.node_objects[label]=eval(cmd)
+	return globalvars.node_objects[label]
+	
+def getSubgraph(graphlabel,nodelabel):
+############ Return a subgraph from an existing graph #########################
+	global globalvars
+	graph =  globalvars.graph_objects[graphlabel]
+	node = globalvars.node_objects[nodelabel]
+	return graph.return_subgraph(node)
+
+def evalGraph(graph):
+############# Evaluate the terminal node of a graph ############################
+	return graph.eval_graph()
