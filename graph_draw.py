@@ -30,20 +30,20 @@ def draw_graph(g_obj):
 		return edge_list
 		
 	for terminalnode in g_obj.terminalnodes:
-		if terminalnode.executed ==1 or terminalnode.time_failed == 1:
-			edge_list = return_edge_list(g_obj,terminalnode, edge_list)
+		#if terminalnode.executed ==1 or terminalnode.time_failed == 1:
+		edge_list = return_edge_list(g_obj,terminalnode, edge_list)
 	
 	#print(edge_list)
 	node_list=[['initworld','']]
 	node_names = ['initworld']
 	for node_i in g_obj.nodes:
-		if node_i.executed ==1 or node_i.time_failed == 1:
-			n_node = type(node_i).__name__ + str(node_i.label)
-			if (type(node_i).__name__ == 'constant'):
-				n_node = str(node_i.K) + '.' + n_node
-			if node_i.executed in (0,1): #and node_i.equivalent_prog == 0:
-				node_list.append([n_node, 'node_lab:'+ str(node_i.label)+ ' atype:'+ str(node_i.atype)+ ' equiv_prog: '+str(node_i.equivalent_prog)+' prog_ex: '+ str(node_i.program_expression)+', runtime: '+str(node_i.runtime)])
-				node_names.append(n_node)
+		#if node_i.executed ==1 or node_i.time_failed == 1:
+		n_node = type(node_i).__name__ + str(node_i.label)
+		if (type(node_i).__name__ == 'constant'):
+			n_node = str(node_i.K) + '.' + n_node
+		if node_i.executed in (0,1): #and node_i.equivalent_prog == 0:
+			node_list.append([n_node, 'node_lab:'+ str(node_i.label)+ ' atype:'+ str(node_i.atype)+ ' equiv_prog: '+str(node_i.equivalent_prog)+' prog_ex: '+ str(node_i.program_expression)+', runtime: '+str(node_i.runtime)])
+			node_names.append(n_node)
 	#print(node_list)
 	with open('C:/skp/phd/UIPS/edge_list.csv', 'w', newline='') as csvfile:
 		spamwriter = csv.writer(csvfile)

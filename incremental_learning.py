@@ -4,11 +4,24 @@ def modify_probability(child_node_name_link_pair,del_probability,parent_node):
 		##### adjust other child node probabilities
 	#target_node_name = child_node_probability_dict['node_name']
 	divide_factor = len(parent_node.child_node_init_probability) - 1
+	total_residue_prob = 0
 	for k,v in enumerate(parent_node.child_node_init_probability):
 		if v['node_name'] == child_node_name_link_pair[0] and v['link'] == child_node_name_link_pair[1]:
 			parent_node.child_node_init_probability[k]['init_probability'] += del_probability
 		else:
-			parent_node.child_node_init_probability[k]['init_probability'] -= del_probability*parent_node.child_node_init_probability[k]['init_probability']#del_probability/divide_factor
+			if del_probability < 0:
+				total_residue_prob += (1-parent_node.child_node_init_probability[k]['init_probability'])
+			else:
+				total_residue_prob += parent_node.child_node_init_probability[k]['init_probability']
+	
+	for k,v in enumerate(parent_node.child_node_init_probability):
+		if v['node_name'] != child_node_name_link_pair[0] or v['link'] != child_node_name_link_pair[1]:
+			if del_probability < 0:
+				parent_node.child_node_init_probability[k]['init_probability'] -= del_probability*(1-parent_node.child_node_init_probability[k]['init_probability'])/total_residue_prob
+			else:
+				parent_node.child_node_init_probability[k]['init_probability'] -= del_probability*parent_node.child_node_init_probability[k]['init_probability']/total_residue_prob
+		
+			#del_probability/divide_factor
 
 
 def calculate_trailing_probability(factored_program_probability,current_edge_node_labels):
@@ -22,10 +35,10 @@ def calculate_trailing_probability(factored_program_probability,current_edge_nod
 		return 1
 		
 
-def calculate_delta_probability(factored_program_probability,sourcenode,terminalnode,reward):
+def calculate_delta_probability(factored_program_probability,sourcenode,terminalnode,reward,link_no):
 	delta_probability = 1
 	alpha = 0.5
-	current_edge = [(k,v) for k,v in factored_program_probability.items() if  k == str(sourcenode.label)+'-'+str(terminalnode.label)][0]
+	current_edge = [(k,v) for k,v in factored_program_probability.items() if  k == str(sourcenode.label)+'-'+str(terminalnode.label)+'-'+str(link_no)][0]
 	current_edge_node_labels = current_edge[0].split('-')
 	current_probability_mass = current_edge[1]['init_probability']
 	
@@ -34,6 +47,7 @@ def calculate_delta_probability(factored_program_probability,sourcenode,terminal
 		
 	#delta_probability = calculate_trailing_probability(factored_program_probability,current_edge_node_labels)	
 	delta_probability = total_program_probability/(program_probability_sourcenode*current_probability_mass)
+	#delta_probability = total_program_probability/(current_probability_mass)
 	
 	if reward > 0:
 		delta_probability *= alpha*reward*(1-current_probability_mass)
@@ -55,6 +69,8 @@ def update_probability(terminalnode):
 	if terminalnode.reward == 0: ###### no reward 
 		None
 	else:                        ###### update probabilities recursively
+		print (terminalnode)
+		print (terminalnode.label)
 		temp_g_nodes = []
 		def graph_return_nodes_for_update_probability(temp_g_nodes,terminalnode,factored_program_probability,reward):
 		# Recursively fetch all parent nodes
@@ -64,7 +80,7 @@ def update_probability(terminalnode):
 					None
 				elif len(sourcenode.links) == 0 and sourcenode.no_of_arguments >0: ######### sourcenode initialnode
 					###### calculate delta probability
-					delta_probability = calculate_delta_probability(factored_program_probability,sourcenode,terminalnode,reward)
+					delta_probability = calculate_delta_probability(factored_program_probability,sourcenode,terminalnode,reward,i)
 					######### make pair of (child node name,link),deltaprobability and parentnode	
 					child_node_name = get_node_name(terminalnode)
 					
@@ -72,7 +88,7 @@ def update_probability(terminalnode):
 				else:
 					graph_return_nodes_for_update_probability(temp_g_nodes,sourcenode,factored_program_probability,reward)
 					###### calculate delta probability
-					delta_probability = calculate_delta_probability(factored_program_probability,sourcenode,terminalnode,reward)
+					delta_probability = calculate_delta_probability(factored_program_probability,sourcenode,terminalnode,reward,i)
 					######### make pair of (child node name,link),deltaprobability and parentnode
 					child_node_name = get_node_name(terminalnode)
 					temp_g_nodes.append(((child_node_name,i), delta_probability, sourcenode))

@@ -9,7 +9,7 @@ from incremental_learning import *
 from environment import *
 
 add_obj = add(globalvars.node_label)
-corpus_of_all_objects = {'sensor_number':['Node(globalvars.node_label,\'sensor\',\'number\')','sensor(globalvars.node_label,\'number\')'],
+corpus_of_all_objects = {'sensor_boolean':['Node(globalvars.node_label,\'sensor\',\'boolean\')','sensor(globalvars.node_label,\'boolean\')'],
 					'actuator_number':['Node(globalvars.node_label,\'actuator\',\'number\')','actuator(globalvars.node_label,\'number\')'],
 					'identity':['Node(globalvars.node_label,\'identity\')','identity(globalvars.node_label)'],
 					'constant0':['Node(globalvars.node_label,\'constant\',0)','constant(globalvars.node_label,0)'],
@@ -32,7 +32,7 @@ corpus_of_all_objects = {'sensor_number':['Node(globalvars.node_label,\'sensor\'
 					'constant'+str(add_obj):['Node(globalvars.node_label,\'constant\',add_obj)','constant(globalvars.node_label,add_obj)']}
 					
 #corpus_index = ['sensor_number','actuator_number','identity','constant0','constant1','constant2','constant3','gaurd','equal','lambdagraph','recurse']
-corpus_index = ['sensor_number','actuator_number','lambdagraph','constant1','recurse','goalchecker','constant2','constant3']
+corpus_index = ['sensor_boolean','actuator_number','lambdagraph','constant1','recurse','goalchecker','constant2','constant3']
 #corpus_index = ['sensor_number','actuator_number','equal','constant1']
 	
 
@@ -40,6 +40,8 @@ def check_type_compatibility(source_node,target_node,target_node_link):
 	node_output_type = source_node.atype['function']['output'][0]
 	node_input_type = target_node.atype['function']['input'][target_node_link]
 	if type(target_node).__name__ == 'constant' and (type(source_node).__name__ not in ['sensor','identity']):
+		return 1
+	elif type(target_node).__name__ == 'lambdagraph' and type(source_node).__name__ == 'lambdagraph':
 		return 1
 	elif type(target_node).__name__ == 'recurse' and target_node_link == 1 and 'function' in node_output_type:
 		try:
@@ -113,9 +115,6 @@ def check_equivalent_program(search_graph,executable_node):
 
 def evaluate_a_graph(search_graph,executable_node,PHASE):
 	global globalvars
-	#global time_limit
-	#global C
-	#global call_cnt
 	executed = 0
 	#global all_node_dict
 	output = None
@@ -155,13 +154,14 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 		executable_node.world_failed = 1
 	except time_exception:
 		#print('time failed')
-		reward = -globalvars.time_limit/100
-		if reward <-1:
-			reward = -1
 		executable_node.time_failed = 1
-		if globalvars.time_limit>10:
-			print(executable_node)
 		executable_node.runtime = max_time_limit-globalvars.time_limit
+		#if executable_node.runtime>10:
+		#	print(executable_node)
+		#reward = -executable_node.runtime/100
+		reward = 0
+		#if reward <-1:
+		#	reward = -1
 	except Exception as e:
 		#print('semantic failed')
 		#print(executable_node)
@@ -169,9 +169,9 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 		reward = 0
 		executable_node.semantic_failed = 1
 	finally:
-		if globalvars.call_cnt >100:
-			print(executable_node)
-			print(executable_node.label)
+		#if globalvars.call_cnt >100:
+		#	print(executable_node)
+		#	print(executable_node.label)
 		executable_node.reward = reward
 		del (current_program_graph.nodes)
 		del (current_program_graph.initialnodes)
@@ -183,7 +183,8 @@ def evaluate_a_graph(search_graph,executable_node,PHASE):
 		#executable_node
 		#if output != None:
 		return output
-		
+
+
 		
 def check_link_group_type_compatibility(source_nodes,target_node_name):
 	if target_node_name == 'gaurd':
@@ -198,14 +199,16 @@ def check_link_group_type_compatibility(source_nodes,target_node_name):
 			return 0
 		else:
 			return 1
-	elif target_node_name == 'lambdagraph' and type(source_nodes[0]).__name__=='lambdagraph':
+	#elif target_node_name == 'lambdagraph' and type(source_nodes[0]).__name__=='lambdagraph':
+	#	return 1
+	elif target_node_name == 'lambdagraph' and type(source_nodes[0].links[0]).__name__=='initWorld':
 		return 1
-	elif target_node_name == 'recurse':
+	elif target_node_name == 'recurse' and (source_nodes[0] == source_nodes[1] or source_nodes[0] == source_nodes[2] or source_nodes[1] == source_nodes[2]):
 		#if 'iW()' not in (str(source_nodes[1].program_expression['data'])):
 		#if str(source_nodes[2].program_expression['data']) == 'l().False':
 		#	return 1
 		#else : 
-		return 0
+		return 1
 	else:
 		return 0
 		
@@ -218,28 +221,47 @@ def check_program_presence(parent_nodes,child_node_name):
 	return (is_exist_program,par_node_label_list)
 	
 
-def calculate_total_program_probability(merged_factored_program_probability):
-	program_probability = 1
-	for k,v in merged_factored_program_probability.items():
-		program_probability *=v['init_probability']
-	return program_probability
-
 def check_program_probability_criteria(parent_nodes,child_node_name):
 	global globalvars
-	program_probability_list = [par_node.factored_program_probability  for par_node in parent_nodes]
+	if len(parent_nodes) ==1:
+		def get_merged_prob_singnode(parent_nodes,child_node_name):
+			merged_factored_program_probability = copy.copy(parent_nodes[0].factored_program_probability)
+			child_probability = [ child_probability for child_probability in parent_nodes[0].child_node_init_probability if child_probability['node_name'] == child_node_name][0]
+			merged_factored_program_probability[str(parent_nodes[0].label)+'-'+str(globalvars.node_label)+'-'+str(child_probability['link'])] = child_probability
+			return merged_factored_program_probability
+		merged_factored_program_probability = get_merged_prob_singnode(parent_nodes,child_node_name)
+	else:
+		def get_merged_prob(parent_nodes):
+			#program_probability_list = [par_node.factored_program_probability  for par_node in parent_nodes]
 	# merge dictionaries
-	merged_factored_program_probability  = dict()
-	for each_prob_dict in program_probability_list:
-		for k, v in each_prob_dict.items():
-			merged_factored_program_probability[k] = v
-	
-	child_probability_list = []
-	for k,par_node in enumerate(parent_nodes):
-		child_probability_list.append(([ child_probability for child_probability in par_node.child_node_init_probability if child_probability['node_name'] == child_node_name and child_probability['link'] == k][0],par_node.label))
-	
+			merged_factored_program_probability  = dict()
+			for par_node in parent_nodes:
+				each_prob_dict = par_node.factored_program_probability
+				for k, v in each_prob_dict.items():
+					merged_factored_program_probability[k] = v
+			return merged_factored_program_probability
+		
+		merged_factored_program_probability = get_merged_prob(parent_nodes)
+		def get_child_prob(parent_nodes,child_node_name):
+			#child_probability_list = []
+			child_probability = None
+			for k,par_node in enumerate(parent_nodes):
+				#child_probability_list.append(([ child_probability for child_probability in par_node.child_node_init_probability if child_probability['node_name'] == child_node_name and child_probability['link'] == k][0],par_node.label))
+				for child_p in par_node.child_node_init_probability:
+					if child_p['node_name'] == child_node_name and child_p['link'] == k:
+						child_probability = child_p
+						break;
+				#child_probability = [ child_probability for child_probability in par_node.child_node_init_probability ][0]
+				merged_factored_program_probability[str(par_node.label)+'-'+str(globalvars.node_label)+'-'+str(child_probability['link'])] = child_probability
+			return merged_factored_program_probability
+		merged_factored_program_probability = get_child_prob(parent_nodes,child_node_name)
 	### add child node probabilities in merged probabilities
-	for child_probability,par_node_label in child_probability_list:
-		merged_factored_program_probability[str(par_node_label)+'-'+str(globalvars.node_label)] = child_probability
+		#def update_merged_prob(child_probability_list,merged_factored_program_probability):
+		#	for child_probability,par_node_label in child_probability_list:
+		#		merged_factored_program_probability[str(par_node_label)+'-'+str(globalvars.node_label)+'-'+str(child_probability['link'])] = child_probability
+		#	return merged_factored_program_probability
+		#merged_factored_program_probability = update_merged_prob(child_probability_list,merged_factored_program_probability)
+		
 	
 	return merged_factored_program_probability
 
@@ -265,6 +287,7 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 	#global existing_programs
 	#global already_checked_pairs
 	added_node_flag = 0
+	executed = 0
 	########## For no dependency on order of links prune keep only distinct combinations of parent nodes
 	if child_node_name in ['equal','add','disjunct','conjunct','multiply']:
 		par_node_combi = itertools.combinations_with_replacement(par_node_list_tuple[0],child_node.no_of_arguments)
@@ -302,18 +325,19 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 			#existing_programs[str(par_node_label_list) + child_node_name] = 1
 			globalvars.existing_programs[str(par_node_label_list) + child_node_name] = child_node
 			########## update child init probability of parents of newly added node
-			
-			same_node,child_probability_list = match_subprograms(search_graph,child_node,20)
+			#print(child_node)
+			#same_node,child_probability_list = match_subprograms(search_graph,child_node,20)
 			#print(child_probability_list,same_node)
-			if child_probability_list == None:
-				print(same_node)
-			if same_node != None:
+			#if child_probability_list == None:
+			#	print(same_node)
+			#	print("samenode")
+			#if same_node != None:
 				#print (child_probability_list)
 				#print (same_node)
 				#print(child_node)
-				for i,v in enumerate(child_node.links):
-					i_probability = [i_prob['init_probability'] for i_prob in v.child_node_init_probability if i_prob['link']==i and i_prob['node_name']==child_node_name][0]
-					modify_probability((child_node_name,i),child_probability_list[i],v)
+			#	for i,v in enumerate(child_node.links):
+			#		i_probability = [i_prob['init_probability'] for i_prob in v.child_node_init_probability if i_prob['link']==i and i_prob['node_name']==child_node_name][0]
+			#		modify_probability((child_node_name,i),child_probability_list[i],v)
 				
 			child_node.program_probability =  calculate_total_program_probability(child_node.factored_program_probability)
 			#if child_node.program_probability*PHASE < 1: ####### if probability criteria not satisfied
@@ -332,6 +356,7 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 				child_node.child_node_init_probability = copy.deepcopy(type_compatible_node_links[child_node_name])	
 				if child_node.child_node_init_probability == None:
 					print(child_node)
+					print("childnode")
 		else:
 			#print('existin prog')
 			#print(is_exist_program)
@@ -342,10 +367,12 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 			output = evaluate_a_graph(search_graph,is_exist_program,PHASE)
 			#child_node.child_node_init_probability = type_compatible_node_links[child_node_name][0]['init_probability']
 			child_node = is_exist_program
+			added_node_flag = 1
 			###### incremental learning
 			update_probability(is_exist_program)	
-			if output == True:
-				print(is_exist_program)
+			#if output == True:
+			#	print(is_exist_program)
+				
 		
 		if output == True:
 			print('Goal Reached')
@@ -361,11 +388,6 @@ def extend_execute_graph(search_graph,corpus_index,corpus_of_objects,type_compat
 	added_node_flag = 0
 	for child_node_name in corpus_index:
 		child_node = eval(corpus_of_objects[child_node_name][1])
-		### Create list of extendable parent nodes
-		#k= [i for i in search_graph.nodes if i.child_node_init_probability == None]
-		#if k:
-		#	print(k)
-		#	return(child_node,1)
 		gen = [extendable_nodes for extendable_nodes_index,extendable_nodes in enumerate(copy.copy(search_graph.nodes)) 
 			if  extendable_nodes.executed == 1 and extendable_nodes.semantic_failed == 0 
 			and extendable_nodes.world_failed == 0 and extendable_nodes.equivalent_prog == 0
@@ -411,6 +433,7 @@ def reset_search_graph(search_graph):
 		i_nodes.world_version = None
 		i_nodes.reward = 0
 		i_nodes.data = None
+		i_nodes.program_probability=calculate_total_program_probability(i_nodes.factored_program_probability)
 	#search_graph.nodes[0].links = (init_world,)
 	search_graph.nodes[0].executed=1
 
@@ -429,7 +452,7 @@ def initialize_search_graph(corpus_index):
 	#initialinput.links = (init_world,) ##### attach first sensor node with initial world
 	initialinput.executed = 1
 	initialinput.program_probability =1
-	initialinput.factored_program_probability['0-'+str(initialinput.label)] = {'node_name':corpus_index[0],'link':0,'init_probability':1}
+	initialinput.factored_program_probability['0-'+str(initialinput.label)+'-0'] = {'node_name':corpus_index[0],'link':0,'init_probability':1}
 	initialinput.child_node_init_probability = copy.deepcopy(init_type_compatible_node_links[corpus_index[0]])
 	initialinput.program_expression = {'data':symbols('iW().S()'),'world':'iW().S()'}
 	addNode(search_graph.label,initialinput,initnode.label)
@@ -465,6 +488,19 @@ def metasearcher(search_graph,corpus_index,corpus_of_objects,init_type_compatibl
 		PHASE *= 2
 	return (None,search_graph)	
 
+def check_probability(search_graph):
+	for i in search_graph.nodes:
+		if i.child_node_init_probability != None:
+			for j in i.child_node_init_probability:
+				if j['init_probability'] > 1 or j['init_probability'] < 0:
+					print("failed")
+					return i
+
+def get_expensive_nodes(search_graph):
+	runtime_list = [i.runtime for i in search_graph.nodes]
+	sorted_node_idx = sorted(range(len(runtime_list)),key=runtime_list.__getitem__, reverse =True)
+	node_list =[search_graph.nodes[j] for j in sorted_node_idx]
+	return node_list
 
 (search_graph,corpus_of_objects,init_type_compatible_node_links) = initialize_search_graph(corpus_index)
 

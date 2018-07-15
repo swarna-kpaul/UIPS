@@ -30,22 +30,22 @@ class world:
 		return {'world':self}
 		
 	def check_goal_state(self):
-		if self.goal_state == self.state[0:len(self.goal_state)]:
+		if self.goal_state == self.state:
 			return True
 		else:
 			return False
 			
 	def get_reward(self):
-		if self.goal_state == self.state[0:len(self.goal_state)]:
+		if self.goal_state == self.state:
 			return 1
 		elif self.world_failed == 1:
-			return -1
+			return 0
 		else:
 			return 0
 		
 		
 init_state = [1,1,[1,0]]
-goal_state = [2,2]
+goal_state = [2,1,[1,0]]
 
 
 
@@ -90,7 +90,7 @@ def maze(*args):
 		
 		x = current_state[0] + current_direction[0]
 		y = current_state[1] + current_direction[1]
-		return maze_def[x][y]
+		return bool(maze_def[x][y])
 
 	elif len(args) ==2:
 		current_state = args[0]

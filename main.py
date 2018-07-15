@@ -64,7 +64,72 @@ k.add_node(r1,l1,l1,s2)
 for i in k.nodes:
 	i.executed=1
 
-#exec_node,search_graph = metasearcher(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,500000)
+
+exec_node,search_graph = metasearcher(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,500000)
+init_prob1=exec_node.program_probability
+print("prog prob")
+fin_prob1=calculate_total_program_probability(exec_node.factored_program_probability)
+
+environment.goal_state = [3,1,[1,0]]
+environment.init_world = environment.world('number',environment.maze,environment.init_state,environment.goal_state)
+exec_node,search_graph = metasearcher(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,500000)
+init_prob2=exec_node.program_probability
+#node1= exec_node
+
+
+#init_prob2=exec_node.program_probability
+#for i in range(8):
+#	exec_node,search_graph = metasearcher(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,500000)
+
+fin_prob2=calculate_total_program_probability(exec_node.factored_program_probability)
+node2= exec_node
+
+environment.goal_state = [4,1,[1,0]]
+environment.init_world = environment.world('number',environment.maze,environment.init_state,environment.goal_state)
+exec_node,search_graph = metasearcher(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,500000)
+init_prob3=exec_node.program_probability
+fin_prob3=calculate_total_program_probability(exec_node.factored_program_probability)
+
+node3=exec_node
+
+environment.goal_state = [5,1,[1,0]]
+environment.init_world = environment.world('number',environment.maze,environment.init_state,environment.goal_state)
+exec_node,search_graph = metasearcher(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,500000)
+init_prob4=exec_node.program_probability
+
+environment.goal_state = [6,1,[1,0]]
+environment.init_world = environment.world('number',environment.maze,environment.init_state,environment.goal_state)
+exec_node,search_graph = metasearcher(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,500000)
+init_prob5=exec_node.program_probability
+
+print(init_prob1,init_prob2,init_prob3,init_prob4,init_prob5)
+# for i in range(6):
+	# exec_node,search_graph = metasearcher(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,500000)
+# fin_prob4=calculate_total_program_probability(exec_node.factored_program_probability)
+
+# node4=exec_node
+
+# environment.goal_state = [10,10,[1,0]]
+# environment.init_world = environment.world('number',environment.maze,environment.init_state,environment.goal_state)	
+# exec_node,search_graph = metasearcher(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,5000000)
+# init_prob5=exec_node.program_probability
+# fin_prob5=calculate_total_program_probability(exec_node.factored_program_probability)
+
+# temp=exec_node
+
+# environment.goal_state = [20,20,[1,0]]
+# environment.init_world = environment.world('number',environment.maze,environment.init_state,environment.goal_state)
+# exec_node,search_graph = metasearcher(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,5000000)
+# init_prob6=exec_node.program_probability
+# fin_prob6=calculate_total_program_probability(exec_node.factored_program_probability)
+
+# print("initial_prob")
+# print(init_prob1,init_prob2,init_prob3,init_prob4,init_prob5,init_prob6)
+# print("final prob")
+# print(fin_prob1,fin_prob2,fin_prob3,fin_prob4,fin_prob5,fin_prob6)
+#exec_node,search_graph = metasearcher(search_graph,corpus_index,corpus_of_objects,init_type_compatible_node_links,5000000)
+
+
 #k=search_graph.return_subgraph(exec_node)
 #draw_graph(k)
 # addNode(search_graph.label,eval(corpus_of_objects['constant1'][0]),search_graph.terminalnodes[0].label)

@@ -66,6 +66,15 @@ class node:
 		self.__links = inlinks
 		if self.no_of_arguments <= len(inlinks):
 			update_type(self)
+	
+	@property
+	def factored_program_probability(self):
+		return self.__factored_program_probability
+		
+	@factored_program_probability.setter
+	def factored_program_probability(self,in_factored_program_probability):
+		self.__factored_program_probability = in_factored_program_probability
+		self.program_probability = calculate_total_program_probability(in_factored_program_probability)
 		
 		
 	def funct(self):
@@ -890,3 +899,9 @@ def getSubgraph(graphlabel,nodelabel):
 def evalGraph(graph):
 ############# Evaluate the terminal node of a graph ############################
 	return graph.eval_graph()
+
+def calculate_total_program_probability(merged_factored_program_probability):
+	program_probability = 1
+	for k,v in merged_factored_program_probability.items():
+		program_probability *=v['init_probability']
+	return program_probability
