@@ -45,7 +45,7 @@ class world:
 		
 		
 init_state = [1,1,[1,0]]
-goal_state = [2,1,[1,0]]
+goal_state = [20,20,[1,0]]
 
 
 

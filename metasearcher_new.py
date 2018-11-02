@@ -39,8 +39,10 @@ corpus_index = ['sensor_boolean','actuator_number','lambdagraph','constant1','re
 def check_type_compatibility(source_node,target_node,target_node_link):
 	node_output_type = source_node.atype['function']['output'][0]
 	node_input_type = target_node.atype['function']['input'][target_node_link]
-	if type(target_node).__name__ == 'constant' and (type(source_node).__name__ not in ['sensor','identity']):
+	if type(target_node).__name__ == 'constant' and (type(source_node).__name__ not in ['sensor','identity']): ##########with equiv program pruning 
 		return 1
+	#if type(target_node).__name__ == 'constant' and (type(source_node).__name__ in ['actuator']):  ######### without equiv program pruning 
+	#	return 1
 	elif type(target_node).__name__ == 'lambdagraph' and type(source_node).__name__ == 'lambdagraph':
 		return 1
 	elif type(target_node).__name__ == 'recurse' and target_node_link == 1 and 'function' in node_output_type:
@@ -50,9 +52,9 @@ def check_type_compatibility(source_node,target_node,target_node_link):
 			else:
 				return 0
 		except:
-			print(source_node)
-			print(source_node.label)
-			print(node_output_type)
+	#		print(source_node)
+	#		print(source_node.label)
+	#		print(node_output_type)
 			return 0
 	elif type(target_node).__name__ == 'goalchecker' and (type(source_node).__name__ not in ['sensor','actuator']):
 		return 1
@@ -346,7 +348,7 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 			output = evaluate_a_graph(search_graph,child_node,PHASE)
 			
 			############### incremental learning
-			update_probability(child_node)
+			#update_probability(child_node)
 			
 			if 	child_node.semantic_failed == 0  and child_node.equivalent_prog == 0:
 				if child_node_name in ['identity','head','tail','cons']:
@@ -369,7 +371,7 @@ def add_multiple_child_node(par_node_list_tuple,child_node,child_node_name,corpu
 			child_node = is_exist_program
 			added_node_flag = 1
 			###### incremental learning
-			update_probability(is_exist_program)	
+			#update_probability(is_exist_program)	
 			#if output == True:
 			#	print(is_exist_program)
 				
@@ -409,7 +411,7 @@ def execute_graph(search_graph,corpus_index,corpus_of_objects,type_compatible_no
 	for executable_node in gen1:
 		#print(executable_node)
 		output=evaluate_a_graph(search_graph,executable_node,PHASE)
-		update_probability(executable_node)
+		#update_probability(executable_node)
 		if 	executable_node.semantic_failed == 0  and executable_node.equivalent_prog == 0 and  type(executable_node).__name__ in ['identity','head','tail','cons']:
 			########### rerun type compatitbilty update
 			node_name = get_node_name(executable_node)
