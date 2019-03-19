@@ -1,5 +1,5 @@
 # UIPS
-Universal Intelligent Problem Solver - Graph Functional Language
+Universal Intelligent Problem Solver - Functional graph programming Language
 
 Perform the following steps to install the code and run the experiments
 
