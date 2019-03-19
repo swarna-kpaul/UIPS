@@ -45,24 +45,19 @@ def draw_graph(g_obj):
 			node_list.append([n_node, 'node_lab:'+ str(node_i.label)+ ' atype:'+ str(node_i.atype)+ ' equiv_prog: '+str(node_i.equivalent_prog)+' prog_ex: '+ str(node_i.program_expression)+', runtime: '+str(node_i.runtime)])
 			node_names.append(n_node)
 	#print(node_list)
-	with open('C:/skp/phd/UIPS/edge_list.csv', 'w', newline='') as csvfile:
+	with open('edge_list.csv', 'w', newline='') as csvfile:
 		spamwriter = csv.writer(csvfile)
 		spamwriter.writerow(['from','to','label'])
 		for edge in edge_list:
 			if edge[0] in node_names and edge[1] in node_names:
 				spamwriter.writerow(edge)
 	
-	with open('C:/skp/phd/UIPS/node_list.csv', 'w', newline='') as csvfile:
+	with open('node_list.csv', 'w', newline='') as csvfile:
 		spamwriter = csv.writer(csvfile)
 		spamwriter.writerow(['id','title'])
 		for node in node_list:
 			spamwriter.writerow(node)
-	#try:
-	#	subprocess.check_call (["C:/Program Files/R/R-3.3.2/bin/Rscript","C:/skp/phd/UIPS/graph_view.r"], shell =True)
-	#except CalledProcessError as e:
-	#	print(e.message)
-	#subprocess.call ("C:/skp/phd/UIPS/graph_view.html", shell =True)
-	#return edge_list
+
 
 	
 	
