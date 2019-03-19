@@ -8,7 +8,7 @@ Perform the following steps to install the code and run the experiments
 
 	import sys
 	
-	sys.path.append("<local installation directory>")
+	sys.path.append("{local installation directory}")
 	
 	from run_experiment import *
 
